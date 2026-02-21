@@ -59,38 +59,67 @@ const WhatsAppSetup = () => {
             {step === 0 && (
                 <div className="card" style={{ maxWidth: 600 }}>
                     <h3 style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Smartphone size={24} color="var(--accent-color)" /> Conectar WhatsApp Business
+                        <Smartphone size={24} color="var(--accent-color)" /> Conectar WhatsApp via QR Code / API
                     </h3>
                     <p className="text-muted" style={{ marginBottom: 24 }}>
-                        Utilizamos o <strong>Embedded Signup</strong> (oficial do Meta) para vincular o número do cliente.
-                        Nenhuma extensão ou QR Code necessário.
+                        Utilize a conexão via Webhook (API de terceiros) ou faça a leitura do QR Code usando seu aparelho de celular corporativo.
                     </p>
 
                     {!connected ? (
-                        <>
-                            <div className="form-group">
-                                <label className="form-label">Selecione o Cliente</label>
-                                <select className="form-control">
-                                    <option>AlphaTech Solutions</option>
-                                    <option>Imobiliária Prime</option>
-                                    <option>Construtora Silva</option>
-                                </select>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                            {/* Option 1: QR Code */}
+                            <div style={{ padding: 20, border: '1px solid var(--border-color)', borderRadius: 12, backgroundColor: 'var(--bg-tertiary)' }}>
+                                <h4 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Smartphone size={18} /> Escanear QR Code (Recomendado)
+                                </h4>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+                                    Abra o WhatsApp no seu celular {'>'} Aparelhos Conectados {'>'} Conectar um Aparelho.
+                                </p>
+                                <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+                                    <div style={{ width: 150, height: 150, backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}>
+                                        {/* Fake QR using text since we don't have a real library in scope */}
+                                        <div style={{ textAlign: 'center', color: 'black' }}>
+                                            [ QR CODE MOCK ]<br />
+                                            <span style={{ fontSize: '0.6rem' }}>Aqui entraria o lib qrCode</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <button className="btn btn-primary" onClick={handleConnect} style={{ width: '100%', marginBottom: 12 }}>
+                                            Simular Leitura QR
+                                        </button>
+                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>O QR Code expira em 30 segundos.</p>
+                                    </div>
+                                </div>
                             </div>
-                            <button className="btn btn-primary" onClick={handleConnect} style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}>
-                                <Wifi size={16} /> Iniciar Embedded Signup (Meta)
-                            </button>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 12, textAlign: 'center' }}>
-                                Será aberto o painel oficial do Facebook para autorização. Você precisará de acesso ao Business Manager.
-                            </p>
-                        </>
+
+                            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>OU</div>
+
+                            {/* Option 2: API Keys */}
+                            <div style={{ padding: 20, border: '1px solid var(--border-color)', borderRadius: 12 }}>
+                                <h4 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Wifi size={18} /> Conexão via API Externa (Z-API / Evolution)
+                                </h4>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontSize: '0.8rem' }}>URL da Instância / Base URL</label>
+                                    <input type="text" className="form-control" placeholder="https://api.seudominio.com/instance..." />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Token de Autenticação (Bearer/Client-Token)</label>
+                                    <input type="password" className="form-control" placeholder="•••••••••••••••••••••" />
+                                </div>
+                                <button className="btn btn-outline" onClick={handleConnect} style={{ width: '100%', justifyContent: 'center' }}>
+                                    Conectar via API
+                                </button>
+                            </div>
+                        </div>
                     ) : (
                         <div style={{ padding: 24, backgroundColor: 'var(--bg-tertiary)', borderRadius: 12, textAlign: 'center' }}>
                             <CheckCircle size={48} color="var(--success)" style={{ marginBottom: 12 }} />
-                            <h3 style={{ color: 'var(--success)', marginBottom: 8 }}>Conectado com sucesso!</h3>
+                            <h3 style={{ color: 'var(--success)', marginBottom: 8 }}>Aparelho Conectado!</h3>
                             <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                <p><strong>WABA ID:</strong> 102938475610293</p>
-                                <p><strong>Phone Number ID:</strong> 293847561029384</p>
-                                <p><strong>Número:</strong> +55 19 99999-0001</p>
+                                <p><strong>Status:</strong> Online (Sessão Ativa)</p>
+                                <p><strong>Número Lendo:</strong> +55 19 99999-0001</p>
+                                <p><strong>Bateria:</strong> 85% ⚡</p>
                             </div>
                             <button className="btn btn-primary" onClick={() => setStep(1)} style={{ marginTop: 16 }}>
                                 Próximo: Configurar Menu <ChevronRight size={16} />
