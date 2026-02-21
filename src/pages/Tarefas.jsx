@@ -7,10 +7,12 @@ const Tarefas = () => {
 
     // Mock inicial das tarefas
     const [tarefas, setTarefas] = useState([
-        { id: 1, titulo: 'Ligar para Lead (Imobiliária)', responsavel: 'SDR U3', dataEntrega: '2026-02-21', status: 'pendente', tempoExecucao: 0, iniciadaEm: null },
-        { id: 2, titulo: 'Ajustar Campanha Meta Ads', responsavel: 'GESTOR U3', dataEntrega: '2026-02-22', status: 'em_andamento', tempoExecucao: 1540, iniciadaEm: Date.now() - 1540000 },
-        { id: 3, titulo: 'Reunião Kickoff AlphaTech', responsavel: 'CEO U3', dataEntrega: '2026-02-20', status: 'concluida', tempoExecucao: 3600, iniciadaEm: null }
+        { id: 1, titulo: 'Ligar para Lead (Imobiliária)', descricao: 'Entrar em contato para fechar proposta final.', cliente: 'Imobiliária Prime', responsavel: 'SDR U3', dataEntrega: '2026-02-21', status: 'pendente', tempoExecucao: 0, iniciadaEm: null },
+        { id: 2, titulo: 'Ajustar Campanha Meta Ads', descricao: 'Otimizar o custo por lead (CPL)', cliente: 'AlphaTech Solutions', responsavel: 'GESTOR U3', dataEntrega: '2026-02-22', status: 'em_andamento', tempoExecucao: 1540, iniciadaEm: Date.now() - 1540000 },
+        { id: 3, titulo: 'Reunião Kickoff AlphaTech', descricao: 'Apresentar cronograma do projeto', cliente: 'AlphaTech Solutions', responsavel: 'CEO U3', dataEntrega: '2026-02-20', status: 'concluida', tempoExecucao: 3600, iniciadaEm: null }
     ]);
+
+    const clientesMock = ['AlphaTech Solutions', 'Imobiliária Prime', 'Construtora Silva', 'Nenhum / Interno'];
 
     const [modalOpen, setModalOpen] = useState(false);
 
@@ -40,6 +42,8 @@ const Tarefas = () => {
         const novaTarefa = {
             id: Date.now(),
             titulo: form.titulo.value,
+            descricao: form.descricao.value,
+            cliente: form.cliente.value,
             responsavel: form.responsavel.value,
             dataEntrega: form.dataEntrega.value,
             status: 'pendente',
@@ -112,8 +116,16 @@ const Tarefas = () => {
                                     <div style={{ fontWeight: 600, textDecoration: tarefa.status === 'concluida' ? 'line-through' : 'none' }}>
                                         {tarefa.titulo}
                                     </div>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                                        <User size={12} /> {tarefa.responsavel}
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                                        {tarefa.descricao}
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-main)', marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
+                                        <span style={{ backgroundColor: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: 4 }}>
+                                            {tarefa.cliente}
+                                        </span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <User size={12} /> {tarefa.responsavel}
+                                        </span>
                                     </div>
                                 </td>
                                 <td>
@@ -174,19 +186,33 @@ const Tarefas = () => {
                                 <input name="titulo" type="text" className="form-control" required />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Atribuir para:</label>
-                                <select name="responsavel" className="form-control" required>
-                                    {USERS.filter(u => u.role !== 'cliente').map(u => (
-                                        <option key={u.id} value={u.name}>{u.name} ({u.role.toUpperCase()})</option>
+                                <label className="form-label">Descrição</label>
+                                <textarea name="descricao" rows="2" className="form-control" required style={{ resize: 'none' }}></textarea>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Cliente Referente</label>
+                                <select name="cliente" className="form-control" required>
+                                    {clientesMock.map(c => (
+                                        <option key={c} value={c}>{c}</option>
                                     ))}
                                 </select>
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Data de Entrega</label>
-                                <input name="dataEntrega" type="date" className="form-control" required />
+                            <div style={{ display: 'flex', gap: 16 }}>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label className="form-label">Atribuir para:</label>
+                                    <select name="responsavel" className="form-control" required>
+                                        {USERS.filter(u => u.role !== 'cliente').map(u => (
+                                            <option key={u.id} value={u.name}>{u.name} ({u.role.toUpperCase()})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group" style={{ width: 150 }}>
+                                    <label className="form-label">Entrega</label>
+                                    <input name="dataEntrega" type="date" className="form-control" required />
+                                </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+                            <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'flex-end' }}>
                                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">Atribuir Tarefa</button>
                             </div>
