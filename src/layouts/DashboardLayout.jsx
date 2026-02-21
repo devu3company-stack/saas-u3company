@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useRef } from 'react';
-import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../utils/auth';
 
 const DashboardLayout = () => {
@@ -9,6 +9,11 @@ const DashboardLayout = () => {
   const { user, logout, getAllowedMenuItems } = useAuth();
   const [logo, setLogo] = useState(() => localStorage.getItem('u3_logo') || '');
   const fileInputRef = useRef(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setIsSidebarOpen(false); // Close sidebar on route change in mobile
+  }, [location.pathname]);
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
@@ -36,7 +41,13 @@ const DashboardLayout = () => {
 
   return (
     <div className="app-container">
-      <aside className="sidebar">
+      {/* Overlay do menu no mobile */}
+      <div
+        className={`sidebar-overlay ${isSidebarOpen ? 'open' : ''}`}
+        onClick={() => setIsSidebarOpen(false)}
+      ></div>
+
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand" onClick={() => fileInputRef.current?.click()} style={{ cursor: 'pointer', position: 'relative' }} title="Clique para trocar a logo">
           <input type="file" ref={fileInputRef} accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
           {logo ? (
@@ -89,6 +100,9 @@ const DashboardLayout = () => {
 
       <main className="main-content">
         <header className="topbar">
+          <button className="topbar-menu-btn" onClick={() => setIsSidebarOpen(true)}>
+            <Menu size={24} />
+          </button>
           <div className="topbar-search">
             <Search size={20} color="var(--text-muted)" />
             <input type="text" placeholder="Buscar clientes, leads..." />
