@@ -129,7 +129,7 @@ const Inbox = () => {
     };
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr 320px', gap: 0, height: 'calc(100vh - 134px)', margin: '-32px', marginTop: '-32px', position: 'relative' }}>
+        <div className="inbox-grid">
 
             {/* Toast notification */}
             {toast && (

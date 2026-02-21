@@ -147,7 +147,28 @@ button {
   display: none;
 }
 
+.sidebar-overlay.open {
+  display: block;
+}
+
+.inbox-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr 320px;
+  gap: 0;
+  height: calc(100vh - 134px);
+  margin: -32px;
+  margin-top: -32px;
+  position: relative;
+}
+
 /* Mobile Responsiveness */
+@media (max-width: 1024px) {
+  .inbox-grid {
+    grid-template-columns: 1fr 1fr;
+    /* escondendo o painel direito provisoriamente ou jogando pra baixo */
+  }
+}
+
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
@@ -209,6 +230,20 @@ button {
   .page-header .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .inbox-grid {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    margin: -16px;
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .inbox-grid>div {
+    min-height: 500px;
+    border-bottom: 2px solid var(--border-color);
   }
 }
 
