@@ -14,7 +14,7 @@ const PERMISSIONS = {
     ceo: [
         '/dashboard', '/clientes', '/leads', '/reunioes', '/trafego',
         '/academy', '/metas', '/pesquisas', '/configuracoes', '/financeiro',
-        '/inbox', '/whatsapp-setup', '/fluxos', '/templates', '/tarefas'
+        '/inbox', '/whatsapp-setup', '/fluxos', '/templates', '/tarefas', '/whitelabel'
     ],
     gestor: [
         '/dashboard', '/clientes', '/leads', '/reunioes', '/trafego',

@@ -18,6 +18,7 @@ import FlowEditor from './pages/FlowEditor';
 import Templates from './pages/Templates';
 import Financeiro from './pages/Financeiro';
 import Tarefas from './pages/Tarefas';
+import WhiteLabel from './pages/WhiteLabel';
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
             <Route path="inbox" element={<Inbox />} />
             <Route path="fluxos" element={<FlowEditor />} />
             <Route path="templates" element={<Templates />} />
+            <Route path="whitelabel" element={<WhiteLabel />} />
           </Route>
         </Routes>
       </Router>
