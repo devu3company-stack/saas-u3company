@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut, Menu, X, DollarSign } from 'lucide-react';
 import { useAuth } from '../utils/auth';
 
 const DashboardLayout = () => {
@@ -32,6 +32,7 @@ const DashboardLayout = () => {
     { path: '/clientes', label: 'Clientes', icon: <Users size={20} /> },
     { path: '/leads', label: 'Leads', icon: <Target size={20} /> },
     { path: '/reunioes', label: 'Reuniões', icon: <Calendar size={20} /> },
+    { path: '/financeiro', label: 'Financeiro', icon: <DollarSign size={20} /> },
     { path: '/trafego', label: 'Dashboard Tráfego', icon: <LineChart size={20} /> },
     { path: '/academy', label: 'Portal do Cliente', icon: <BookOpen size={20} /> },
     { path: '/metas', label: 'Metas', icon: <TrendingUp size={20} /> },

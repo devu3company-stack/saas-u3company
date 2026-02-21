@@ -2,26 +2,29 @@ import { createContext, useContext, useState } from 'react';
 
 // Usuários do sistema (mock — em produção viria do backend)
 const USERS = [
-    { id: 1, email: 'admin@u3company.com', password: 'admin123', name: 'Admin Principal', role: 'admin' },
-    { id: 2, email: 'trafego@u3company.com', password: 'trafego123', name: 'Gestor de Tráfego', role: 'gestor' },
-    { id: 3, email: 'fin@u3company.com', password: 'fin123', name: 'Financeiro', role: 'financeiro' },
-    { id: 4, email: 'cliente@alphatech.com', password: 'cliente123', name: 'AlphaTech Solutions', role: 'cliente' },
-    { id: 5, email: 'cliente@prime.com', password: 'cliente123', name: 'Imobiliária Prime', role: 'cliente' },
+    { id: 1, email: 'ceo@u3company.com', password: 'ceo', name: 'CEO U3', role: 'ceo' },
+    { id: 2, email: 'gestor@u3company.com', password: 'gestor', name: 'GESTOR U3', role: 'gestor' },
+    { id: 3, email: 'financeiro@u3company.com', password: 'fin', name: 'FINANCEIRO U3', role: 'financeiro' },
+    { id: 4, email: 'sdr@u3company.com', password: 'sdr', name: 'SDR U3', role: 'sdr' },
+    { id: 5, email: 'cliente@alphatech.com', password: 'cliente', name: 'AlphaTech Solutions', role: 'cliente' },
 ];
 
 // Permissões por role — define quais rotas cada papel pode acessar
 const PERMISSIONS = {
-    admin: [
+    ceo: [
         '/dashboard', '/clientes', '/leads', '/reunioes', '/trafego',
-        '/academy', '/metas', '/pesquisas', '/configuracoes',
+        '/academy', '/metas', '/pesquisas', '/configuracoes', '/financeiro',
         '/inbox', '/whatsapp-setup', '/fluxos', '/templates'
     ],
     gestor: [
         '/dashboard', '/clientes', '/leads', '/reunioes', '/trafego',
-        '/academy', '/inbox', '/fluxos', '/templates'
+        '/academy', '/inbox', '/fluxos', '/templates', '/metas'
     ],
     financeiro: [
-        '/dashboard', '/clientes', '/metas', '/configuracoes'
+        '/dashboard', '/clientes', '/metas', '/configuracoes', '/financeiro'
+    ],
+    sdr: [
+        '/dashboard', '/clientes', '/leads', '/reunioes', '/inbox'
     ],
     cliente: [
         '/trafego', '/academy'

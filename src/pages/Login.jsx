@@ -6,8 +6,8 @@ import { useAuth } from '../utils/auth';
 const Login = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
-    const [email, setEmail] = useState('admin@u3company.com');
-    const [password, setPassword] = useState('admin123');
+    const [email, setEmail] = useState('ceo@u3company.com');
+    const [password, setPassword] = useState('ceo');
     const [error, setError] = useState('');
 
     const handleLogin = (e) => {
@@ -61,10 +61,11 @@ const Login = () => {
 
                 <div style={{ marginTop: 24, padding: 16, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     <p style={{ fontWeight: 600, marginBottom: 8, color: 'var(--text-main)' }}>Acessos de teste:</p>
-                    <p>👑 Admin: <strong>admin@u3company.com</strong> / admin123</p>
-                    <p>📊 Gestor: <strong>trafego@u3company.com</strong> / trafego123</p>
-                    <p>💰 Financeiro: <strong>fin@u3company.com</strong> / fin123</p>
-                    <p>👤 Cliente: <strong>cliente@alphatech.com</strong> / cliente123</p>
+                    <p>👑 CEO: <strong>ceo@u3company.com</strong> / ceo</p>
+                    <p>📊 Gestor: <strong>gestor@u3company.com</strong> / gestor</p>
+                    <p>💰 Financeiro: <strong>financeiro@u3company.com</strong> / fin</p>
+                    <p>📞 SDR: <strong>sdr@u3company.com</strong> / sdr</p>
+                    <p>👤 Cliente: <strong>cliente@alphatech.com</strong> / cliente</p>
                 </div>
             </div>
         </div>

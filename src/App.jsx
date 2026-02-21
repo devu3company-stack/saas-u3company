@@ -16,6 +16,7 @@ import WhatsAppSetup from './pages/WhatsAppSetup';
 import Inbox from './pages/Inbox';
 import FlowEditor from './pages/FlowEditor';
 import Templates from './pages/Templates';
+import Financeiro from './pages/Financeiro';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path="clientes/:id" element={<ClientDetail />} />
             <Route path="leads" element={<Leads />} />
             <Route path="reunioes" element={<Meetings />} />
+            <Route path="financeiro" element={<Financeiro />} />
             <Route path="trafego" element={<Traffic />} />
             <Route path="academy" element={<Academy />} />
             <Route path="metas" element={<Goals />} />
