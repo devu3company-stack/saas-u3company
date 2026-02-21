@@ -1,10 +1,18 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Plus, Filter } from 'lucide-react';
 
 const Clients = () => {
+    const location = useLocation();
     const [filter, setFilter] = useState('Todos');
     const [showModal, setShowModal] = useState(false);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('new') === 'true') {
+            setShowModal(true);
+        }
+    }, [location]);
 
     const clients = [
         { id: 1, name: 'AlphaTech Solutions', contato: 'Carlos Silva', status: 'ativo', mrr: 'R$ 2.500', responsavel: 'Admin' },

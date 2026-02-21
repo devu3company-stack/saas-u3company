@@ -111,7 +111,7 @@ const DashboardLayout = () => {
             <input type="text" placeholder="Buscar clientes, leads..." />
           </div>
           <div className="topbar-actions">
-            {user?.role !== 'cliente' && <button className="btn btn-primary">Novo Cliente</button>}
+            {user?.role !== 'cliente' && <Link to="/clientes?new=true" className="btn btn-primary add-button-mobile">Novo Cliente</Link>}
             <button className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, padding: 0, borderRadius: '50%' }}>
               <Bell size={20} />
             </button>

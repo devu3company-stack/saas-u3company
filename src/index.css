@@ -217,6 +217,10 @@ button {
     padding: 16px;
   }
 
+  .add-button-mobile {
+    display: none !important;
+  }
+
   .grid-cards {
     grid-template-columns: 1fr;
   }
@@ -310,7 +314,7 @@ button {
   background-color: var(--bg-secondary);
   border-radius: 12px;
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 table {
