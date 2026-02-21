@@ -17,6 +17,7 @@ import Inbox from './pages/Inbox';
 import FlowEditor from './pages/FlowEditor';
 import Templates from './pages/Templates';
 import Financeiro from './pages/Financeiro';
+import Tarefas from './pages/Tarefas';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path="clientes" element={<Clients />} />
             <Route path="clientes/:id" element={<ClientDetail />} />
             <Route path="leads" element={<Leads />} />
+            <Route path="tarefas" element={<Tarefas />} />
             <Route path="reunioes" element={<Meetings />} />
             <Route path="financeiro" element={<Financeiro />} />
             <Route path="trafego" element={<Traffic />} />

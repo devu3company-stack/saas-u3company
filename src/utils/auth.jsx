@@ -14,17 +14,17 @@ const PERMISSIONS = {
     ceo: [
         '/dashboard', '/clientes', '/leads', '/reunioes', '/trafego',
         '/academy', '/metas', '/pesquisas', '/configuracoes', '/financeiro',
-        '/inbox', '/whatsapp-setup', '/fluxos', '/templates'
+        '/inbox', '/whatsapp-setup', '/fluxos', '/templates', '/tarefas'
     ],
     gestor: [
         '/dashboard', '/clientes', '/leads', '/reunioes', '/trafego',
-        '/academy', '/inbox', '/fluxos', '/templates', '/metas'
+        '/academy', '/inbox', '/fluxos', '/templates', '/metas', '/tarefas'
     ],
     financeiro: [
         '/dashboard', '/clientes', '/metas', '/configuracoes', '/financeiro'
     ],
     sdr: [
-        '/dashboard', '/clientes', '/leads', '/reunioes', '/inbox'
+        '/dashboard', '/clientes', '/leads', '/reunioes', '/inbox', '/tarefas'
     ],
     cliente: [
         '/trafego', '/academy'
