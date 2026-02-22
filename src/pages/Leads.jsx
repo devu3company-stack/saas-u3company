@@ -116,10 +116,10 @@ const Leads = () => {
                                                 Atualizado: {new Date(lead.updatedAt).toLocaleDateString()}
                                             </span>
                                             <div style={{ display: 'flex', gap: 6 }}>
-                                                <button className="btn btn-outline" title="Chamar WhatsApp" style={{ padding: 6, borderRadius: '50%' }}>
+                                                <button className="btn btn-outline" title="Chamar WhatsApp" onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/5511999999999?text=Olá ${encodeURIComponent(lead.name)}, tudo bem? Gostaria de falar sobre o projeto!`, '_blank'); }} style={{ padding: 6, borderRadius: '50%' }}>
                                                     <MessageCircle size={14} color="var(--success)" />
                                                 </button>
-                                                <button className="btn btn-outline" title="Agendar Reunião" style={{ padding: 6, borderRadius: '50%' }}>
+                                                <button className="btn btn-outline" title="Agendar Reunião" onClick={(e) => { e.stopPropagation(); window.location.href = '/reunioes'; }} style={{ padding: 6, borderRadius: '50%' }}>
                                                     <Calendar size={14} color="var(--accent-color)" />
                                                 </button>
                                             </div>

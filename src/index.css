@@ -221,6 +221,10 @@ button {
     display: none !important;
   }
 
+  .hide-mobile {
+    display: none !important;
+  }
+
   .grid-cards {
     grid-template-columns: 1fr;
   }

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut, Menu, X, DollarSign, ListTodo, Layers } from 'lucide-react';
+import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut, Menu, X, DollarSign, ListTodo, Layers, CheckCircle } from 'lucide-react';
 import { useAuth } from '../utils/auth';
 
 const DashboardLayout = () => {
@@ -111,6 +111,9 @@ const DashboardLayout = () => {
             <input type="text" placeholder="Buscar clientes, leads..." />
           </div>
           <div className="topbar-actions">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: 'var(--success)', padding: '4px 12px', backgroundColor: 'rgba(0, 208, 132, 0.1)', borderRadius: 20 }}>
+              <CheckCircle size={12} /> <span className="hide-mobile">Sincronizado na Nuvem</span>
+            </div>
             {user?.role !== 'cliente' && <Link to="/clientes?new=true" className="btn btn-primary add-button-mobile">Novo Cliente</Link>}
             <button className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, padding: 0, borderRadius: '50%' }}>
               <Bell size={20} />

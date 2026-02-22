@@ -3,28 +3,46 @@ import { Plus, Trash2, MessageSquare, HelpCircle, UserCheck, Tag, ArrowRight, Sa
 
 const FlowEditor = () => {
     const [selectedFlow, setSelectedFlow] = useState('menu_principal');
+    const [insertIndex, setInsertIndex] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [lastSaved, setLastSaved] = useState('Salvo recentemente');
 
-    const [nodes, setNodes] = useState([
-        { id: 'start', type: 'trigger', content: 'Palavra-chave: "Olá", "Menu"', title: 'Gatilho Inicial' },
-        { id: 'boas_vindas', type: 'message', content: 'Olá! 👋 Pra te atender mais rápido, escolha uma opção abaixo:', title: 'Mensagem de Saudação' },
-        {
-            id: 'menu', type: 'menu', content: 'Menu Principal', title: 'Menu de Opções', options: [
-                { label: '1. Suporte Técnico', next: 'suporte_flow', color: 'var(--accent-color)' },
-                { label: '2. Comercial / Vendas', next: 'vendas_flow', color: 'var(--success)' },
-                { label: '3. Financeiro (2ª Via)', next: 'financeiro_flow', color: 'var(--warning)' },
-            ]
-        },
-    ]);
+    const [nodes, setNodes] = useState(() => {
+        const saved = localStorage.getItem('u3_flow_nodes');
+        if (saved) return JSON.parse(saved);
+        return [
+            { id: 'start', type: 'trigger', content: 'Palavra-chave: "Olá", "Menu"', title: 'Gatilho Inicial' },
+            { id: 'boas_vindas', type: 'message', content: 'Olá! 👋 Pra te atender mais rápido, escolha uma opção abaixo:', title: 'Mensagem de Saudação' },
+            {
+                id: 'menu', type: 'menu', content: 'Menu Principal', title: 'Menu de Opções', options: [
+                    { label: '1. Suporte Técnico', next: 'suporte_flow', color: 'var(--accent-color)' },
+                    { label: '2. Comercial / Vendas', next: 'vendas_flow', color: 'var(--success)' },
+                    { label: '3. Financeiro (2ª Via)', next: 'financeiro_flow', color: 'var(--warning)' },
+                ]
+            },
+        ]
+    });
 
     const nodeTypes = [
         { type: 'message', label: 'Texto Simples', icon: <MessageSquare size={18} />, color: '#4FC3F7', desc: 'Envia uma mensagem de texto' },
         { type: 'media', label: 'Imagem / Arquivo', icon: <ImageIcon size={18} />, color: '#BA68C8', desc: 'Envia mídia ou documento' },
+        { type: 'AI', label: 'Resposta de IA', icon: <Zap size={18} />, color: '#7E57C2', desc: 'Responde automaticamente (Groq/OpenAI)' },
         { type: 'menu', label: 'Menu de Opções', icon: <Tag size={18} />, color: 'var(--accent-color)', desc: 'Cria botões de escolha' },
         { type: 'question', label: 'Coletar Dado', icon: <HelpCircle size={18} />, color: '#FFB74D', desc: 'Espera resposta do usuário' },
         { type: 'delay', label: 'Atraso Inteligente', icon: <Clock size={18} />, color: '#90A4AE', desc: 'Simula digitação' },
         { type: 'action', label: 'Ação / Webhook', icon: <Zap size={18} />, color: 'var(--success)', desc: 'Integra com outro sistema' },
         { type: 'handoff', label: 'Passar p/ Humano', icon: <UserCheck size={18} />, color: '#F06292', desc: 'Envia para a fila' },
     ];
+
+    const handleSave = () => {
+        setIsSaving(true);
+        localStorage.setItem('u3_flow_nodes', JSON.stringify(nodes));
+        setTimeout(() => {
+            setIsSaving(false);
+            const now = new Date();
+            setLastSaved(`Salvo às ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+        }, 800);
+    };
 
     const handleAddNode = (typeObj) => {
         const newNode = {
@@ -36,11 +54,31 @@ const FlowEditor = () => {
         if (typeObj.type === 'menu') {
             newNode.options = [{ label: 'Nova Opção', next: '' }];
         }
-        setNodes([...nodes, newNode]);
+
+        let newNodesList;
+        if (insertIndex !== null) {
+            newNodesList = [...nodes];
+            newNodesList.splice(insertIndex, 0, newNode);
+            setInsertIndex(null);
+        } else {
+            newNodesList = [...nodes, newNode];
+        }
+
+        setNodes(newNodesList);
+        // Auto save trigger
+        setTimeout(() => {
+            localStorage.setItem('u3_flow_nodes', JSON.stringify(newNodesList));
+            setLastSaved('Salvo automaticamente');
+        }, 500);
     };
 
     const removeNode = (id) => {
-        setNodes(nodes.filter(n => n.id !== id));
+        const list = nodes.filter(n => n.id !== id);
+        setNodes(list);
+        setTimeout(() => {
+            localStorage.setItem('u3_flow_nodes', JSON.stringify(list));
+            setLastSaved('Salvo automaticamente');
+        }, 500);
     };
 
     return (
@@ -61,7 +99,10 @@ const FlowEditor = () => {
                         </select>
                     </div>
                     <button className="btn btn-outline" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><Play size={16} /> Testar Fluxo</button>
-                    <button className="btn btn-primary" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><Save size={16} /> Publicar</button>
+                    <button className="btn btn-primary" onClick={handleSave} disabled={isSaving} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <Save size={16} /> {isSaving ? 'Salvando...' : 'Publicar'}
+                    </button>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{lastSaved}</div>
                 </div>
             </div>
 
@@ -70,7 +111,9 @@ const FlowEditor = () => {
 
                 {/* Sidebar de Ferramentas */}
                 <div style={{ width: 280, borderRight: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Blocos Disponíveis</h3>
+                    <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+                        {insertIndex !== null ? 'Selecione para Inserir 🔽' : 'Blocos Disponíveis'}
+                    </h3>
 
                     {nodeTypes.map((t, idx) => (
                         <div
@@ -78,11 +121,12 @@ const FlowEditor = () => {
                             onClick={() => handleAddNode(t)}
                             style={{
                                 display: 'flex', alignItems: 'flex-start', gap: 12, padding: 12,
-                                backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)',
-                                borderRadius: 8, cursor: 'grab', transition: '0.2s',
+                                backgroundColor: insertIndex !== null ? 'var(--bg-tertiary)' : 'var(--bg-main)', border: insertIndex !== null ? `1px solid ${t.color}` : '1px solid var(--border-color)',
+                                borderRadius: 8, cursor: 'pointer', transition: '0.2s',
+                                transform: insertIndex !== null ? 'scale(1.02)' : 'none'
                             }}
                             onMouseOver={e => e.currentTarget.style.borderColor = t.color}
-                            onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                            onMouseOut={e => e.currentTarget.style.borderColor = insertIndex !== null ? t.color : 'var(--border-color)'}
                         >
                             <div style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${t.color}20`, color: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 {t.icon}
@@ -95,8 +139,14 @@ const FlowEditor = () => {
                     ))}
 
                     <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px dashed var(--border-color)', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                        <MousePointer2 size={16} style={{ display: 'block', margin: '0 auto 8px', opacity: 0.5 }} />
-                        Clique em um bloco para adicionar ao fluxo ativo.
+                        {insertIndex !== null ? (
+                            <button onClick={() => setInsertIndex(null)} className="btn btn-outline" style={{ width: '100%', padding: 8 }}>Cancelar Inserção</button>
+                        ) : (
+                            <>
+                                <MousePointer2 size={16} style={{ display: 'block', margin: '0 auto 8px', opacity: 0.5 }} />
+                                Clique em um bloco para adicionar ao fluxo ativo.
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -182,17 +232,29 @@ const FlowEditor = () => {
                                 {/* A Linha de Conexão Vertical */}
                                 {index < nodes.length - 1 && (
                                     <div style={{
-                                        width: 2, height: 40,
-                                        backgroundColor: 'var(--accent-color)',
-                                        opacity: 0.5,
-                                        position: 'relative'
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', width: '100%'
                                     }}>
+                                        <div style={{ width: 2, height: 40, backgroundColor: 'var(--accent-color)', opacity: 0.5 }}></div>
+                                        <button
+                                            key={`insert_${index}`}
+                                            onClick={() => setInsertIndex(index + 1)}
+                                            style={{
+                                                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                                backgroundColor: insertIndex === index + 1 ? 'var(--accent-color)' : 'var(--bg-secondary)',
+                                                border: '1px solid var(--accent-color)', color: insertIndex === index + 1 ? 'black' : 'var(--text-main)',
+                                                borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 3, padding: 0,
+                                                boxShadow: insertIndex === index + 1 ? '0 0 10px rgba(255, 246, 0, 0.5)' : 'none'
+                                            }}
+                                            title="Inserir bloco aqui"
+                                        >
+                                            <Plus size={14} />
+                                        </button>
                                         <div style={{
-                                            position: 'absolute', bottom: -4, left: -4,
+                                            position: 'absolute', bottom: -4, left: '50%',
                                             width: 10, height: 10,
                                             borderBottom: '2px solid var(--accent-color)',
                                             borderRight: '2px solid var(--accent-color)',
-                                            transform: 'rotate(45deg)',
+                                            transform: 'translateX(-50%) rotate(45deg)',
                                             opacity: 0.5
                                         }}></div>
                                     </div>
