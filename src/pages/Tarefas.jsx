@@ -19,7 +19,16 @@ const Tarefas = () => {
         localStorage.setItem('u3_tarefas', JSON.stringify(tarefas));
     }, [tarefas]);
 
-    const clientesMock = ['AlphaTech Solutions', 'Imobiliária Prime', 'Construtora Silva', 'Nenhum / Interno'];
+    const [clientes, setClientes] = useState(['Nenhum / Interno']);
+
+    useEffect(() => {
+        const savedClients = JSON.parse(localStorage.getItem('u3_clients') || '[]');
+        if (savedClients.length > 0) {
+            setClientes(['Nenhum / Interno', ...savedClients.map(c => c.name)]);
+        } else {
+            setClientes(['Nenhum / Interno', 'AlphaTech Solutions', 'Imobiliária Prime', 'Construtora Silva']);
+        }
+    }, []);
 
     const [modalOpen, setModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState('kanban'); // 'list' ou 'kanban'
@@ -345,7 +354,7 @@ const Tarefas = () => {
                             <div className="form-group">
                                 <label className="form-label">Cliente Referente</label>
                                 <select name="cliente" className="form-control" required>
-                                    {clientesMock.map(c => (
+                                    {clientes.map(c => (
                                         <option key={c} value={c}>{c}</option>
                                     ))}
                                 </select>

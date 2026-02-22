@@ -18,9 +18,16 @@ const Academy = () => {
                         onChange={(e) => setSelectedClient(e.target.value)}
                         style={{ minWidth: 200 }}
                     >
-                        <option>AlphaTech Solutions</option>
-                        <option>Imobiliária Prime</option>
-                        <option>Construtora Silva</option>
+                        {JSON.parse(localStorage.getItem('u3_clients') || '[]').map(c => (
+                            <option key={c.id} value={c.name}>{c.name}</option>
+                        ))}
+                        {JSON.parse(localStorage.getItem('u3_clients') || '[]').length === 0 && (
+                            <>
+                                <option>AlphaTech Solutions</option>
+                                <option>Imobiliária Prime</option>
+                                <option>Construtora Silva</option>
+                            </>
+                        )}
                     </select>
                 </div>
             </div>

@@ -29,23 +29,50 @@ const ClientDetail = () => {
         ));
     };
 
-    // Dados Mockados para o Demo
-    const client = {
-        name: id === '1' ? 'AlphaTech Solutions' : 'Imobiliária Prime',
-        status: 'ativo',
-        start: '10/01/2026',
-        mrr: 'R$ 2.500',
-        nps: 9.5,
-        responsible: 'Gestor U3',
-        phone: '(11) 99999-9999',
-        email: 'contato@cliente.com'
-    };
+    // Load REAL Client Data
+    const [client, setClient] = useState(null);
+    const [clientTasks, setClientTasks] = useState([]);
 
-    const clientTasks = [
-        { id: 1, title: 'Criar novas artes Meta Ads', status: 'pendente', resp: 'Design U3', time: '0h 0m 0s' },
-        { id: 2, title: 'Ajustar Campanha Meta Ads', status: 'em_andamento', resp: 'Gestor U3', time: '0h 25m 40s' },
-        { id: 3, title: 'Reunião Kickoff', status: 'concluida', resp: 'CEO U3', time: '1h 0m 0s' }
-    ];
+    useEffect(() => {
+        const clients = JSON.parse(localStorage.getItem('u3_clients') || '[]');
+        const found = clients.find(c => c.id.toString() === id);
+        if (found) {
+            setClient({
+                name: found.name,
+                status: found.status || 'ativo',
+                start: found.start || new Date().toLocaleDateString('pt-BR'),
+                mrr: found.mrr || '-',
+                nps: found.nps || '-',
+                responsible: found.responsavel || 'Gestor U3',
+                phone: found.whatsapp || found.contato || '-',
+                email: found.email || '-'
+            });
+        } else {
+            setClient({
+                name: 'Cliente Não Encontrado',
+                status: 'cancelado',
+                start: '-', mrr: '-', nps: '-', responsible: '-', phone: '-', email: '-'
+            });
+        }
+
+        const tasks = JSON.parse(localStorage.getItem('u3_tarefas') || '[]');
+        // Filter tasks by client name (if matched)
+        const matchedTasks = tasks.filter(t => found && t.cliente.toLowerCase().includes(found.name.toLowerCase()));
+
+        // If no tasks found, provide mock tasks
+        if (matchedTasks.length > 0) {
+            setClientTasks(matchedTasks.map(t => ({
+                id: t.id, title: t.titulo,
+                status: t.coluna === 'concluido' ? 'concluida' : t.coluna === 'pendente' ? 'pendente' : 'em_andamento',
+                resp: t.responsavel, time: 'Dinâmico'
+            })));
+        } else {
+            setClientTasks([
+                { id: 1, title: 'Criar novas artes Meta Ads', status: 'pendente', resp: 'Equipe U3', time: '0h 0m' },
+                { id: 2, title: 'Setup de Conta', status: 'em_andamento', resp: 'Gestor U3', time: '1h 20m' }
+            ]);
+        }
+    }, [id]);
 
     const funnelStages = [
         { name: 'Leads (Topo)', count: 120, color: 'var(--border-color)' },
@@ -53,6 +80,8 @@ const ClientDetail = () => {
         { name: 'Oportunidades (Fundo)', count: 15, color: 'var(--accent-color)' },
         { name: 'Vendas Fechadas', count: 4, color: 'var(--success)' }
     ];
+
+    if (!client) return <div style={{ padding: 40, textAlign: 'center' }}>Carregando dados do cliente...</div>;
 
     return (
         <div>

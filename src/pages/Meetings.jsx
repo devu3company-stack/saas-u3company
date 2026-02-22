@@ -151,8 +151,20 @@ const Meetings = () => {
 
                             <div className="form-group">
                                 <label className="form-label">Cliente</label>
-                                <input type="text" className="form-control" required placeholder="Ex: Imobiliária Prime"
-                                    value={newMeet.client} onChange={e => setNewMeet({ ...newMeet, client: e.target.value })} />
+                                <select className="form-control" required
+                                    value={newMeet.client} onChange={e => setNewMeet({ ...newMeet, client: e.target.value })}>
+                                    <option value="" disabled>Selecione um cliente...</option>
+                                    <option value="Lead Externo">Lead Externo (Avulso)</option>
+                                    {JSON.parse(localStorage.getItem('u3_clients') || '[]').map(c => (
+                                        <option key={c.id} value={c.name}>{c.name}</option>
+                                    ))}
+                                    {JSON.parse(localStorage.getItem('u3_clients') || '[]').length === 0 && (
+                                        <>
+                                            <option value="Imobiliária Prime">Imobiliária Prime</option>
+                                            <option value="AlphaTech Solutions">AlphaTech Solutions</option>
+                                        </>
+                                    )}
+                                </select>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>

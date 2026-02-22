@@ -87,9 +87,16 @@ const Traffic = () => {
                             onChange={(e) => setSelectedClient(e.target.value)}
                             style={{ minWidth: 200 }}
                         >
-                            <option>AlphaTech Solutions</option>
-                            <option>Imobiliária Prime</option>
-                            <option>Construtora Silva</option>
+                            {JSON.parse(localStorage.getItem('u3_clients') || '[]').map(c => (
+                                <option key={c.id} value={c.name}>{c.name}</option>
+                            ))}
+                            {JSON.parse(localStorage.getItem('u3_clients') || '[]').length === 0 && (
+                                <>
+                                    <option>AlphaTech Solutions</option>
+                                    <option>Imobiliária Prime</option>
+                                    <option>Construtora Silva</option>
+                                </>
+                            )}
                         </select>
                         <button className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <Download size={16} /> Exportar Relatório

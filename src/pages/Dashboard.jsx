@@ -11,8 +11,11 @@ const Dashboard = () => {
         setLeadsCount(savedLeads.filter(l => l.status === 'Novo').length);
 
         const savedTasks = JSON.parse(localStorage.getItem('u3_tarefas') || '[]');
-        const pendentes = savedTasks.filter(t => t.coluna === 'pendente' || t.coluna === 'em_andamento').length;
-        const atrasadas = savedTasks.length > 0 ? 1 : 0; // Mockando atrasadas se tiver tarefa
+        const pendentes = savedTasks.filter(t => t.status === 'pendente' || t.status === 'em_andamento').length;
+        const atrasadas = savedTasks.filter(t => {
+            if (t.status === 'concluida') return false;
+            return new Date(t.dataEntrega) < new Date();
+        }).length;
 
         setTasksCount({
             pendentes,

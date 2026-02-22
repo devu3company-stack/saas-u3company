@@ -33,7 +33,7 @@ const Goals = () => {
         <div>
             <div className="page-header" style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                 <div>
-                    <h2>Metas de {currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)} (Gamificação)</h2>
+                    <h2>Calendário de Metas ({currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)})</h2>
                     <p className="text-muted">Acompanhamento diário para bater {remainingDays} dias úteis restantes</p>
                 </div>
                 <button className="btn btn-primary" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
