@@ -95,30 +95,61 @@ const Inbox = () => {
     };
 
     const handleCreateTask = () => {
-        showToast(`📋 Tarefa criada para "${convo.contactName}" — acompanhe em Clientes 360°`);
+        const savedTarefas = localStorage.getItem('u3_tarefas');
+        const tarefasArr = savedTarefas ? JSON.parse(savedTarefas) : [];
+        const novaTarefa = {
+            id: Date.now(),
+            titulo: `Atender Solicitação - ${convo.contactName}`,
+            descricao: `Lead gerado pelo WhatsApp.\nÚltima msg: ${convo.lastMsg}`,
+            cliente: convo.contactName,
+            responsavel: 'SDR U3',
+            dataEntrega: new Date().toISOString().split('T')[0],
+            status: 'pendente',
+            tempoExecucao: 0,
+            iniciadaEm: null
+        };
+        localStorage.setItem('u3_tarefas', JSON.stringify([novaTarefa, ...tarefasArr]));
+        showToast(`📋 Tarefa criada para "${convo.contactName}" — acompanhe no Kanban`);
     };
 
     const handleScheduleMeeting = (e) => {
         e.preventDefault();
         setShowMeetModal(false);
 
-        // Gera link Google Calendar
         const form = e.target;
         const title = form.meetTitle.value;
-        const date = form.meetDate.value.replace(/-/g, '');
+        const dateRaw = form.meetDate.value;
+        const date = dateRaw.replace(/-/g, '');
         const timeS = form.meetTimeStart.value.replace(':', '') + '00';
         const timeE = form.meetTimeEnd.value.replace(':', '') + '00';
+        const notes = form.meetDesc.value;
 
+        // Salvar localmente
+        const savedMeetings = localStorage.getItem('u3_meetings');
+        const meetingsArr = savedMeetings ? JSON.parse(savedMeetings) : [];
+        const novoCompromisso = {
+            id: Date.now(),
+            date: dateRaw,
+            timeStart: form.meetTimeStart.value,
+            timeEnd: form.meetTimeEnd.value,
+            client: convo.contactName,
+            title: title,
+            platform: 'Google Meet',
+            details: notes
+        };
+        localStorage.setItem('u3_meetings', JSON.stringify([...meetingsArr, novoCompromisso]));
+
+        // Gera link Google Calendar
         const params = new URLSearchParams({
             action: 'TEMPLATE',
             text: `${title} - ${convo.contactName}`,
-            details: `Reunião com ${convo.contactName} (${convo.phone})`,
+            details: `Reunião com ${convo.contactName} (${convo.phone})\n\n${notes}`,
             location: 'Google Meet',
             dates: `${date}T${timeS}/${date}T${timeE}`,
             add: 'contato@u3company.com',
         });
         window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, '_blank');
-        showToast(`📅 Reunião "${title}" agendada para ${convo.contactName}!`);
+        showToast(`📅 Reunião "${title}" agendada! Confirme no Google Agenda.`);
     };
 
     const statusColors = {
@@ -358,6 +389,10 @@ const Inbox = () => {
                                     <label className="form-label">Fim</label>
                                     <input name="meetTimeEnd" type="time" className="form-control" required defaultValue="11:00" />
                                 </div>
+                            </div>
+                            <div className="form-group" style={{ marginTop: 16 }}>
+                                <label className="form-label">Descrição da Reunião</label>
+                                <textarea name="meetDesc" rows="3" className="form-control" placeholder="Anotações para pauta..." style={{ resize: 'none' }}></textarea>
                             </div>
                             <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
                                 <button type="button" className="btn btn-outline" onClick={() => setShowMeetModal(false)}>Cancelar</button>

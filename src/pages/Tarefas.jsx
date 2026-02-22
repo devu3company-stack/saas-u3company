@@ -5,12 +5,19 @@ import { Plus, CheckCircle, Clock, Calendar, AlertCircle, PlayCircle, StopCircle
 const Tarefas = () => {
     const { user, USERS } = useAuth();
 
-    // Mock inicial das tarefas
-    const [tarefas, setTarefas] = useState([
-        { id: 1, titulo: 'Ligar para Lead (Imobiliária)', descricao: 'Entrar em contato para fechar proposta final.', cliente: 'Imobiliária Prime', responsavel: 'SDR U3', dataEntrega: '2026-02-21', status: 'pendente', tempoExecucao: 0, iniciadaEm: null },
-        { id: 2, titulo: 'Ajustar Campanha Meta Ads', descricao: 'Otimizar o custo por lead (CPL)', cliente: 'AlphaTech Solutions', responsavel: 'GESTOR U3', dataEntrega: '2026-02-22', status: 'em_andamento', tempoExecucao: 1540, iniciadaEm: Date.now() - 1540000 },
-        { id: 3, titulo: 'Reunião Kickoff AlphaTech', descricao: 'Apresentar cronograma do projeto', cliente: 'AlphaTech Solutions', responsavel: 'CEO U3', dataEntrega: '2026-02-20', status: 'concluida', tempoExecucao: 3600, iniciadaEm: null }
-    ]);
+    const [tarefas, setTarefas] = useState(() => {
+        const saved = localStorage.getItem('u3_tarefas');
+        if (saved) return JSON.parse(saved);
+        return [
+            { id: 1, titulo: 'Ligar para Lead (Imobiliária)', descricao: 'Entrar em contato para fechar proposta final.', cliente: 'Imobiliária Prime', responsavel: 'SDR U3', dataEntrega: '2026-02-21', status: 'pendente', tempoExecucao: 0, iniciadaEm: null },
+            { id: 2, titulo: 'Ajustar Campanha Meta Ads', descricao: 'Otimizar o custo por lead (CPL)', cliente: 'AlphaTech Solutions', responsavel: 'GESTOR U3', dataEntrega: '2026-02-22', status: 'em_andamento', tempoExecucao: 1540, iniciadaEm: Date.now() - 1540000 },
+            { id: 3, titulo: 'Reunião Kickoff AlphaTech', descricao: 'Apresentar cronograma do projeto', cliente: 'AlphaTech Solutions', responsavel: 'CEO U3', dataEntrega: '2026-02-20', status: 'concluida', tempoExecucao: 3600, iniciadaEm: null }
+        ];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('u3_tarefas', JSON.stringify(tarefas));
+    }, [tarefas]);
 
     const clientesMock = ['AlphaTech Solutions', 'Imobiliária Prime', 'Construtora Silva', 'Nenhum / Interno'];
 

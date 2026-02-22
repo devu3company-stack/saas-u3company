@@ -1,5 +1,5 @@
-import { Calendar as CalendarIcon, Clock, Video, Plus, ExternalLink, Users } from 'lucide-react';
-import { useState } from 'react';
+import { Calendar as CalendarIcon, Clock, Video, Plus, ExternalLink, Users, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const Meetings = () => {
     const [showModal, setShowModal] = useState(false);
@@ -14,11 +14,19 @@ const Meetings = () => {
         details: 'Reunião via Google Meet com a equipe.'
     });
 
-    const meetings = [
-        { date: 'Hoje', time: '14:30', client: 'Construtora Silva', title: 'Alinhamento', platform: 'Google Meet' },
-        { date: 'Amanhã', time: '10:00', client: 'Dental Care Clínica', title: 'Apresentação Diagnóstico', platform: 'Zoom' },
-        { date: 'Amanhã', time: '16:00', client: 'Boutique Fashion', title: 'Onboarding', platform: 'Google Meet' }
-    ];
+    const [meetings, setMeetings] = useState(() => {
+        const saved = localStorage.getItem('u3_meetings');
+        if (saved) return JSON.parse(saved);
+        return [
+            { id: 1, date: '2026-02-21', timeStart: '14:30', client: 'Construtora Silva', title: 'Alinhamento', platform: 'Google Meet', details: '' },
+            { id: 2, date: '2026-02-22', timeStart: '10:00', client: 'Dental Care Clínica', title: 'Apresentação Diagnóstico', platform: 'Zoom', details: '' },
+            { id: 3, date: '2026-02-22', timeStart: '16:00', client: 'Boutique Fashion', title: 'Onboarding', platform: 'Google Meet', details: '' }
+        ];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('u3_meetings', JSON.stringify(meetings));
+    }, [meetings]);
 
     const generateGoogleCalendarLink = (meetParams) => {
         if (!meetParams.date) return '#';
@@ -46,13 +54,32 @@ const Meetings = () => {
     const handleScheduleMeet = (e) => {
         e.preventDefault();
 
-        // Abre em nova guia para salvar lá
+        // Salvar localmente
+        const novoCompromisso = {
+            id: Date.now(),
+            date: newMeet.date,
+            timeStart: newMeet.timeStart,
+            timeEnd: newMeet.timeEnd,
+            client: newMeet.client,
+            title: newMeet.title,
+            platform: 'Google Meet',
+            details: newMeet.details
+        };
+        setMeetings([...meetings, novoCompromisso]);
+
+        // Abre em nova guia
         const url = generateGoogleCalendarLink(newMeet);
         window.open(url, '_blank');
 
-        // Em um sistema real, salvaria no DB (supabase/firebase) aqui primeiro
-
         setShowModal(false);
+    };
+
+    const formatDateExt = (dStr) => {
+        if (!dStr) return '';
+        const today = new Date().toISOString().split('T')[0];
+        if (dStr === today) return 'Hoje';
+        const parts = dStr.split('-');
+        return `${parts[2]}/${parts[1]}`;
     };
 
     return (
@@ -77,9 +104,9 @@ const Meetings = () => {
                         <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: 'var(--bg-tertiary)', borderRadius: 12 }}>
                             <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
                                 <div style={{ textAlign: 'center', paddingRight: 24, borderRight: '1px solid var(--border-color)' }}>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{m.date}</div>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{formatDateExt(m.date)}</div>
                                     <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--accent-color)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <Clock size={16} /> {m.time}
+                                        <Clock size={16} /> {m.timeStart || m.time}
                                     </div>
                                 </div>
 
@@ -88,6 +115,11 @@ const Meetings = () => {
                                     <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <Users size={14} /> {m.client}
                                     </div>
+                                    {m.details && (
+                                        <div style={{ marginTop: 6, fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <FileText size={12} /> {m.details}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -139,6 +171,12 @@ const Meetings = () => {
                                     <input type="time" className="form-control" required
                                         value={newMeet.timeEnd} onChange={e => setNewMeet({ ...newMeet, timeEnd: e.target.value })} />
                                 </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Descrição / Pauta da Reunião</label>
+                                <textarea rows="3" className="form-control" placeholder="Anotações ou links..." style={{ resize: 'none' }}
+                                    value={newMeet.details} onChange={e => setNewMeet({ ...newMeet, details: e.target.value })}></textarea>
                             </div>
 
                             <div style={{ display: 'flex', gap: 12, marginTop: 32, justifyContent: 'flex-end' }}>
