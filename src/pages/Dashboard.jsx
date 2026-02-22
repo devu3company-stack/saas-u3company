@@ -113,7 +113,7 @@ const Dashboard = () => {
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>👤 {t.responsavel || 'Equipe'} | {t.cliente}</div>
                                 </div>
                                 <span className="badge" style={{ backgroundColor: 'var(--bg-main)', color: 'var(--text-muted)', border: `1px solid var(--border-color)` }}>
-                                    {t.coluna.toUpperCase().replace('_', ' ')}
+                                    {(t.status || t.coluna || '').toUpperCase().replace('_', ' ')}
                                 </span>
                             </div>
                         )) : (
