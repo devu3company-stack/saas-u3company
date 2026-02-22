@@ -11,16 +11,17 @@ const Meetings = () => {
         date: '',
         timeStart: '10:00',
         timeEnd: '11:00',
-        details: 'Reunião via Google Meet com a equipe.'
+        details: 'Reunião via Google Meet com a equipe.',
+        meetLink: ''
     });
 
     const [meetings, setMeetings] = useState(() => {
         const saved = localStorage.getItem('u3_meetings');
         if (saved) return JSON.parse(saved);
         return [
-            { id: 1, date: '2026-02-21', timeStart: '14:30', client: 'Construtora Silva', title: 'Alinhamento', platform: 'Google Meet', details: '' },
-            { id: 2, date: '2026-02-22', timeStart: '10:00', client: 'Dental Care Clínica', title: 'Apresentação Diagnóstico', platform: 'Zoom', details: '' },
-            { id: 3, date: '2026-02-22', timeStart: '16:00', client: 'Boutique Fashion', title: 'Onboarding', platform: 'Google Meet', details: '' }
+            { id: 1, date: '2026-02-21', timeStart: '14:30', client: 'Construtora Silva', title: 'Alinhamento', platform: 'Google Meet', details: '', meetLink: 'https://meet.google.com/abc-def-ghi' },
+            { id: 2, date: '2026-02-22', timeStart: '10:00', client: 'Dental Care Clínica', title: 'Apresentação Diagnóstico', platform: 'Zoom', details: '', meetLink: 'https://zoom.us/j/123456789' },
+            { id: 3, date: '2026-02-22', timeStart: '16:00', client: 'Boutique Fashion', title: 'Onboarding', platform: 'Google Meet', details: '', meetLink: '' }
         ];
     });
 
@@ -40,8 +41,8 @@ const Meetings = () => {
             const params = new URLSearchParams({
                 action: 'TEMPLATE',
                 text: `${meetParams.title} - ${meetParams.client}`,
-                details: meetParams.details,
-                location: 'Google Meet',
+                details: `${meetParams.details}\n\nLink da Reunião: ${meetParams.meetLink}`,
+                location: meetParams.meetLink || 'Google Meet',
                 dates: `${dateStr}T${startStr}/${dateStr}T${endStr}`,
                 add: 'contato@u3company.com', // Adiciona o seu e-mail do agenda que vai ser notificado
             });
@@ -63,7 +64,8 @@ const Meetings = () => {
             client: newMeet.client,
             title: newMeet.title,
             platform: 'Google Meet',
-            details: newMeet.details
+            details: newMeet.details,
+            meetLink: newMeet.meetLink
         };
         setMeetings([...meetings, novoCompromisso]);
 
@@ -124,9 +126,15 @@ const Meetings = () => {
                             </div>
 
                             <div style={{ display: 'flex', gap: 12 }}>
-                                <button className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Video size={16} /> Entrar na Call
-                                </button>
+                                {m.meetLink ? (
+                                    <a href={m.meetLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+                                        <Video size={16} /> Entrar na Call
+                                    </a>
+                                ) : (
+                                    <button className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.5, cursor: 'not-allowed' }} title="Nenhum link configurado para esta reunião.">
+                                        <Video size={16} /> Sem Link
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -183,6 +191,12 @@ const Meetings = () => {
                                     <input type="time" className="form-control" required
                                         value={newMeet.timeEnd} onChange={e => setNewMeet({ ...newMeet, timeEnd: e.target.value })} />
                                 </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Link da Videoconferência (Meet/Zoom)</label>
+                                <input type="url" className="form-control" placeholder="https://meet.google.com/..."
+                                    value={newMeet.meetLink} onChange={e => setNewMeet({ ...newMeet, meetLink: e.target.value })} />
                             </div>
 
                             <div className="form-group">

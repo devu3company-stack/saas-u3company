@@ -1,8 +1,45 @@
-import { useState } from 'react';
-import { Target, MessageCircle, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Target, MessageCircle, Calendar, Edit2, Save, Trash2, Plus } from 'lucide-react';
 
 const Academy = () => {
-    const [selectedClient, setSelectedClient] = useState('AlphaTech Solutions');
+    const defaultClients = JSON.parse(localStorage.getItem('u3_clients') || '[]');
+    const initialClient = defaultClients.length > 0 ? defaultClients[0].name : 'AlphaTech Solutions';
+    const [selectedClient, setSelectedClient] = useState(initialClient);
+    const [isEditingRoadmap, setIsEditingRoadmap] = useState(false);
+
+    const defaultRoadmap = [
+        { id: 1, title: 'Setup & Kickoff', desc: 'Configuração de BM, criação de anúncios iniciais e landing page de alta conversão.', active: true },
+        { id: 2, title: 'Escala & Otimização', desc: 'Implementação de regras automáticas, teste A/B contínuo de criativos.', active: false },
+        { id: 3, title: 'Consolidação CRM', desc: 'Liberação de portal próprio avançado, funis e remarketing omni-channel.', active: false }
+    ];
+
+    const [roadmaps, setRoadmaps] = useState(() => {
+        return JSON.parse(localStorage.getItem('u3_roadmaps') || '{}');
+    });
+
+    const currentRoadmap = roadmaps[selectedClient] || defaultRoadmap;
+
+    const saveRoadmap = (updatedRoadmap) => {
+        const newRoadmaps = { ...roadmaps, [selectedClient]: updatedRoadmap };
+        setRoadmaps(newRoadmaps);
+        localStorage.setItem('u3_roadmaps', JSON.stringify(newRoadmaps));
+    };
+
+    const handleUpdateStep = (index, field, value) => {
+        const updated = [...currentRoadmap];
+        updated[index] = { ...updated[index], [field]: value };
+        saveRoadmap(updated);
+    };
+
+    const handleAddStep = () => {
+        const updated = [...currentRoadmap, { id: Date.now(), title: 'Nova Etapa', desc: 'Descrição da etapa...', active: false }];
+        saveRoadmap(updated);
+    };
+
+    const handleRemoveStep = (index) => {
+        const updated = currentRoadmap.filter((_, i) => i !== index);
+        saveRoadmap(updated);
+    };
 
     return (
         <div>
@@ -64,45 +101,55 @@ const Academy = () => {
 
                     {/* Timeline de Entregas por Mês */}
                     <div className="card" style={{ marginBottom: 24, padding: 0 }}>
-                        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3 style={{ fontSize: '1.2rem', margin: 0 }}>Roadmap de Entregas (Mês a Mês)</h3>
-                            <span className="badge" style={{ backgroundColor: 'var(--warning)', color: 'black' }}>Estratégia de Retenção</span>
+                        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <h3 style={{ fontSize: '1.2rem', margin: 0 }}>Roadmap de Entregas</h3>
+                                <span className="badge" style={{ backgroundColor: 'var(--warning)', color: 'black' }}>Estratégia de Retenção</span>
+                            </div>
+                            <button className="btn btn-outline" onClick={() => setIsEditingRoadmap(!isEditingRoadmap)} style={{ padding: '4px 12px', fontSize: '0.8rem', display: 'flex', gap: 8, alignItems: 'center' }}>
+                                {isEditingRoadmap ? <><Save size={14} /> Concluir Edição</> : <><Edit2 size={14} /> Editar Roadmap</>}
+                            </button>
                         </div>
                         <div style={{ padding: 24 }}>
-                            {/* Mês 1 */}
-                            <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>1</div>
-                                    <div style={{ width: 2, height: 40, backgroundColor: 'var(--accent-color)', marginTop: 8 }}></div>
+                            {currentRoadmap.map((step, index) => (
+                                <div key={step.id} style={{ display: 'flex', gap: 16, marginBottom: index === currentRoadmap.length - 1 ? 0 : 24 }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                        <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: step.active ? 'var(--accent-color)' : 'transparent', border: step.active ? 'none' : '2px solid var(--border-color)', color: step.active ? 'black' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                            {index + 1}
+                                        </div>
+                                        {index < currentRoadmap.length - 1 && (
+                                            <div style={{ width: 2, height: '100%', minHeight: 40, backgroundColor: step.active ? 'var(--accent-color)' : 'var(--border-color)', marginTop: 8, flex: 1 }}></div>
+                                        )}
+                                    </div>
+                                    <div style={{ opacity: step.active ? 1 : 0.6, flex: 1 }}>
+                                        {isEditingRoadmap ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                                    <input type="text" className="form-control" value={step.title} onChange={e => handleUpdateStep(index, 'title', e.target.value)} style={{ padding: '4px 8px', fontSize: '0.9rem' }} />
+                                                    <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', cursor: 'pointer' }}>
+                                                        <input type="checkbox" checked={step.active} onChange={e => handleUpdateStep(index, 'active', e.target.checked)} />
+                                                        Ativo
+                                                    </label>
+                                                    <button onClick={() => handleRemoveStep(index)} style={{ color: 'var(--danger)', padding: 4 }}><Trash2 size={16} /></button>
+                                                </div>
+                                                <textarea className="form-control" value={step.desc} onChange={e => handleUpdateStep(index, 'desc', e.target.value)} style={{ padding: '4px 8px', fontSize: '0.85rem', minHeight: 60 }} />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <h4 style={{ margin: '0 0 4px', color: step.active ? 'var(--accent-color)' : 'var(--text-main)' }}>Mês {index + 1}: {step.title}</h4>
+                                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>{step.desc}</p>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 style={{ margin: '0 0 4px', color: 'var(--accent-color)' }}>Mês 1: Setup & Kickoff</h4>
-                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Configuração de BM, criação de anúncios iniciais e landing page de alta conversão.</p>
+                            ))}
+                            {isEditingRoadmap && (
+                                <div style={{ marginTop: 24, textAlign: 'center' }}>
+                                    <button className="btn btn-outline" onClick={handleAddStep} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 auto' }}>
+                                        <Plus size={16} /> Adicionar Mês / Etapa
+                                    </button>
                                 </div>
-                            </div>
-
-                            {/* Mês 2 */}
-                            <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: 'transparent', border: '2px solid var(--border-color)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>2</div>
-                                    <div style={{ width: 2, height: 40, backgroundColor: 'var(--border-color)', marginTop: 8 }}></div>
-                                </div>
-                                <div style={{ opacity: 0.6 }}>
-                                    <h4 style={{ margin: '0 0 4px', color: 'var(--text-main)' }}>Mês 2: Escala & Otimização</h4>
-                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Implementação de regras automáticas, teste A/B contínuo de criativos.</p>
-                                </div>
-                            </div>
-
-                            {/* Mês 3 */}
-                            <div style={{ display: 'flex', gap: 16 }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: 'transparent', border: '2px solid var(--border-color)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>3</div>
-                                </div>
-                                <div style={{ opacity: 0.6 }}>
-                                    <h4 style={{ margin: '0 0 4px', color: 'var(--text-main)' }}>Mês 3: Consolidação CRM</h4>
-                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Liberação de portal próprio avançado, funis e remarketing omni-channel.</p>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

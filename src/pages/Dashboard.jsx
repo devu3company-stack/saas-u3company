@@ -7,8 +7,13 @@ const Dashboard = () => {
     const [tasksCount, setTasksCount] = useState({ pendentes: 0, atrasadas: 0, lista: [] });
 
     useEffect(() => {
-        const savedLeads = JSON.parse(localStorage.getItem('u3_leads') || '[]');
-        setLeadsCount(savedLeads.filter(l => l.status === 'Novo').length);
+        const savedLeadsStr = localStorage.getItem('u3_leads');
+        if (savedLeadsStr) {
+            const savedLeads = JSON.parse(savedLeadsStr);
+            setLeadsCount(savedLeads.filter(l => l.status === 'Novo').length);
+        } else {
+            setLeadsCount(12); // Mock inicial se não tiver nada
+        }
 
         const savedTasks = JSON.parse(localStorage.getItem('u3_tarefas') || '[]');
         const pendentes = savedTasks.filter(t => t.status === 'pendente' || t.status === 'em_andamento').length;
@@ -63,7 +68,7 @@ const Dashboard = () => {
                         Novos Leads
                         <Users size={18} color="var(--accent-color)" />
                     </div>
-                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>{leadsCount || 12}</div>
+                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>{leadsCount}</div>
                     <div style={{ marginTop: 8, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--success)' }}>
                         <ArrowUpRight size={14} /> Dinâmico via CRM
                     </div>
