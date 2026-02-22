@@ -1,7 +1,26 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Target, DollarSign, Calendar, AlertTriangle, MessageSquare, CheckSquare, Activity, ArrowUpRight, ArrowDownRight, Users, Clock } from 'lucide-react';
 
 const Dashboard = () => {
+    const [leadsCount, setLeadsCount] = useState(0);
+    const [tasksCount, setTasksCount] = useState({ pendentes: 0, atrasadas: 0, lista: [] });
+
+    useEffect(() => {
+        const savedLeads = JSON.parse(localStorage.getItem('u3_leads') || '[]');
+        setLeadsCount(savedLeads.filter(l => l.status === 'Novo').length);
+
+        const savedTasks = JSON.parse(localStorage.getItem('u3_tarefas') || '[]');
+        const pendentes = savedTasks.filter(t => t.coluna === 'pendente' || t.coluna === 'em_andamento').length;
+        const atrasadas = savedTasks.length > 0 ? 1 : 0; // Mockando atrasadas se tiver tarefa
+
+        setTasksCount({
+            pendentes,
+            atrasadas,
+            lista: savedTasks.slice(0, 3)
+        });
+    }, []);
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div className="page-header" style={{ marginBottom: 0 }}>
@@ -41,9 +60,9 @@ const Dashboard = () => {
                         Novos Leads
                         <Users size={18} color="var(--accent-color)" />
                     </div>
-                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>42</div>
+                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>{leadsCount || 12}</div>
                     <div style={{ marginTop: 8, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--success)' }}>
-                        <ArrowUpRight size={14} /> 12 Convertidos (28%)
+                        <ArrowUpRight size={14} /> Dinâmico via CRM
                     </div>
                 </div>
 
@@ -65,9 +84,9 @@ const Dashboard = () => {
                         Tarefas Pendentes
                         <CheckSquare size={18} color="var(--warning)" />
                     </div>
-                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>18</div>
+                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>{tasksCount.pendentes}</div>
                     <div style={{ marginTop: 8, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--danger)' }}>
-                        <ArrowDownRight size={14} /> 5 Tarefas Atrasadas!
+                        <ArrowDownRight size={14} /> {tasksCount.atrasadas} Atrasadas
                     </div>
                 </div>
             </div>
@@ -79,26 +98,24 @@ const Dashboard = () => {
                 <div className="card" style={{ padding: 0 }}>
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <CheckSquare size={16} color="var(--text-muted)" /> Status da Equipe
+                            <CheckSquare size={16} color="var(--text-muted)" /> Últimas Tarefas
                         </h3>
                         <Link to="/tarefas" className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Ver Kanban</Link>
                     </div>
                     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {[
-                            { task: 'Criar Landing Page - AlphaTech', resp: 'Design U3', status: 'em_andamento', color: 'var(--warning)' },
-                            { task: 'Análise Concorrência Meta', resp: 'Gestor U3', status: 'pendente', color: 'var(--border-color)' },
-                            { task: 'Aprovação de Criativos', resp: 'Cliente (Joana)', status: 'atrasada', color: 'var(--danger)' }
-                        ].map((t, idx) => (
-                            <div key={idx} style={{ padding: 12, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, borderLeft: `3px solid ${t.color}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {tasksCount.lista.length > 0 ? tasksCount.lista.map((t, idx) => (
+                            <div key={idx} style={{ padding: 12, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, borderLeft: `3px solid var(--border-color)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>{t.task}</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>👤 {t.resp}</div>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>{t.titulo}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>👤 {t.responsavel || 'Equipe'} | {t.cliente}</div>
                                 </div>
-                                <span className="badge" style={{ backgroundColor: t.status === 'atrasada' ? '#ff333330' : 'var(--bg-main)', color: t.status === 'atrasada' ? 'var(--danger)' : 'var(--text-muted)', border: `1px solid ${t.color}` }}>
-                                    {t.status.toUpperCase()}
+                                <span className="badge" style={{ backgroundColor: 'var(--bg-main)', color: 'var(--text-muted)', border: `1px solid var(--border-color)` }}>
+                                    {t.coluna.toUpperCase().replace('_', ' ')}
                                 </span>
                             </div>
-                        ))}
+                        )) : (
+                            <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: '0.8rem' }}>Sem tarefas cadastradas</div>
+                        )}
                     </div>
                 </div>
 
@@ -108,7 +125,7 @@ const Dashboard = () => {
                         <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                             <Calendar size={16} color="var(--text-muted)" /> Agenda de Hoje
                         </h3>
-                        <span className="badge" style={{ backgroundColor: 'var(--accent-color)', color: 'black' }}>4 reuniões</span>
+                        <span className="badge" style={{ backgroundColor: 'var(--accent-color)', color: 'black' }}>3 reuniões</span>
                     </div>
                     <div style={{ padding: 16 }}>
                         {[
