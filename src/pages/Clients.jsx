@@ -14,13 +14,36 @@ const Clients = () => {
         }
     }, [location]);
 
-    const clients = [
-        { id: 1, name: 'AlphaTech Solutions', contato: 'Carlos Silva', status: 'ativo', mrr: 'R$ 2.500', responsavel: 'Admin' },
-        { id: 2, name: 'Imobiliária Prime', contato: 'Fernanda Lima', status: 'ativo', mrr: 'R$ 3.000', responsavel: 'Gestor' },
-        { id: 3, name: 'Boutique Fashion', contato: 'Roberto Mendes', status: 'pausado', mrr: 'R$ 1.200', responsavel: 'Admin' },
-        { id: 4, name: 'Construtora Silva', contato: 'Joana', status: 'ativo', mrr: 'R$ 5.500', responsavel: 'Admin' },
-        { id: 5, name: 'Dental Care Clínica', contato: 'Dr. Marcos', status: 'cancelado', mrr: 'R$ 2.000', responsavel: 'Gestor' }
-    ];
+    const [clients, setClients] = useState(() => {
+        const saved = localStorage.getItem('u3_clients');
+        if (saved) return JSON.parse(saved);
+        return [
+            { id: 1, name: 'AlphaTech Solutions', contato: 'Carlos Silva', status: 'ativo', mrr: 'R$ 2.500', responsavel: 'Admin' },
+            { id: 2, name: 'Imobiliária Prime', contato: 'Fernanda Lima', status: 'ativo', mrr: 'R$ 3.000', responsavel: 'Gestor' },
+            { id: 3, name: 'Boutique Fashion', contato: 'Roberto Mendes', status: 'pausado', mrr: 'R$ 1.200', responsavel: 'Admin' },
+            { id: 4, name: 'Construtora Silva', contato: 'Joana', status: 'ativo', mrr: 'R$ 5.500', responsavel: 'Admin' },
+            { id: 5, name: 'Dental Care Clínica', contato: 'Dr. Marcos', status: 'cancelado', mrr: 'R$ 2.000', responsavel: 'Gestor' }
+        ];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('u3_clients', JSON.stringify(clients));
+    }, [clients]);
+
+    const handleCreateClient = (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const newClient = {
+            id: Date.now(),
+            name: form.empresa.value,
+            contato: form.contato.value,
+            status: 'ativo', // novo cliente entra ativo no onboarding
+            mrr: form.mrr.value,
+            responsavel: 'Admin' // padrão
+        };
+        setClients([newClient, ...clients]);
+        setShowModal(false);
+    };
 
     const filtered = filter === 'Todos' ? clients : clients.filter(c => c.status === filter.toLowerCase());
 
@@ -97,23 +120,23 @@ const Clients = () => {
                 }}>
                     <div className="card" style={{ width: '100%', maxWidth: 500 }}>
                         <h3 style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border-color)' }}>Onboarding de Novo Cliente</h3>
-                        <form onSubmit={(e) => { e.preventDefault(); setShowModal(false); }}>
+                        <form onSubmit={handleCreateClient}>
                             <div className="form-group">
                                 <label className="form-label">Nome da Empresa</label>
-                                <input type="text" className="form-control" required placeholder="Ex: Mega Empreendimentos" />
+                                <input name="empresa" type="text" className="form-control" required placeholder="Ex: Mega Empreendimentos" />
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Pessoa de Contato</label>
-                                <input type="text" className="form-control" required placeholder="Ex: Ricardo (Diretor)" />
+                                <input name="contato" type="text" className="form-control" required placeholder="Ex: Ricardo (Diretor)" />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                 <div className="form-group">
                                     <label className="form-label">WhatsApp</label>
-                                    <input type="text" className="form-control" required placeholder="(11) 99999-9999" />
+                                    <input name="whatsapp" type="text" className="form-control" required placeholder="(11) 99999-9999" />
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Mensalidade (MRR Target)</label>
-                                    <input type="text" className="form-control" required placeholder="R$ 3.500" />
+                                    <input name="mrr" type="text" className="form-control" required placeholder="R$ 3.500" />
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: 12, marginTop: 32, justifyContent: 'flex-end' }}>
