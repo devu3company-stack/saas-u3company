@@ -4,6 +4,8 @@ import { Smartphone, CheckCircle, ChevronRight, Wifi, Users, MessageSquare, Zap,
 const WhatsAppSetup = () => {
     const [step, setStep] = useState(0);
     const [connected, setConnected] = useState(false);
+    const [qrBase64, setQrBase64] = useState('');
+    const [isGeneratingQr, setIsGeneratingQr] = useState(false);
     const [departments, setDepartments] = useState([
         { id: 1, name: 'Administrativo', greeting: 'Olá! Você está falando com o setor Administrativo. Como posso ajudar?', agents: ['Admin Principal'], questions: ['Qual o assunto?'] },
         { id: 2, name: 'Comercial', greeting: 'Olá! Você chegou no Comercial. Vamos entender sua necessidade!', agents: ['Gestor de Tráfego 1'], questions: ['Qual sua cidade?', 'Qual serviço te interessa?', 'Melhor horário para contato?'] },
@@ -19,8 +21,56 @@ const WhatsAppSetup = () => {
         { label: 'Testar', icon: <Zap size={20} /> },
     ];
 
-    const handleConnect = () => {
-        setTimeout(() => setConnected(true), 1500);
+    const handleConnect = async () => {
+        setIsGeneratingQr(true);
+        try {
+            const response = await fetch('http://localhost:3001/api/whatsapp/create-instance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ instanceName: 'Test-AlphaTech' })
+            });
+            const data = await response.json();
+
+            if (data.qrcode && data.qrcode.base64) {
+                setQrBase64(data.qrcode.base64);
+            }
+            setIsGeneratingQr(false);
+
+            // Simula leitura após gerar o QR pra testes rápidos (num ambiente real as pessoas escaneariam)
+            setTimeout(() => setConnected(true), 4000);
+        } catch (error) {
+            console.error("Erro ao conectar Evolution API fake:", error);
+            setIsGeneratingQr(false);
+        }
+    };
+
+    const handleSendTest = async () => {
+        if (!testPhone) return alert('Por favor, digite um número de teste.');
+        try {
+            const response = await fetch('http://localhost:3001/api/whatsapp/send-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    instanceName: 'Test-AlphaTech',
+                    number: testPhone.replace(/\D/g, ''),
+                    text: 'Olá! Esta é uma mensagem de teste do seu CRM saas-u3company via Evolution API mockada.'
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert(data.message);
+            } else {
+                alert('Falha ao enviar mensagem.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Erro de comunicação com o webhook mockado.');
+        }
+    };
+
+    const handleFinish = () => {
+        alert("Configuração do WhatsApp concluída e ativada com sucesso!");
+        window.location.href = '/inbox';
     };
 
     return (
@@ -77,15 +127,20 @@ const WhatsAppSetup = () => {
                                 </p>
                                 <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
                                     <div style={{ width: 150, height: 150, backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}>
-                                        {/* Fake QR using text since we don't have a real library in scope */}
+                                        {/* Fake QR Fake vindo da Evolution Mock */}
                                         <div style={{ textAlign: 'center', color: 'black' }}>
-                                            [ QR CODE MOCK ]<br />
-                                            <span style={{ fontSize: '0.6rem' }}>Aqui entraria o lib qrCode</span>
+                                            {qrBase64 ? (
+                                                <img src={qrBase64} alt="QR Code" style={{ width: 130, height: 130 }} />
+                                            ) : isGeneratingQr ? (
+                                                <span style={{ fontSize: '0.8rem' }}>Gerando QR...</span>
+                                            ) : (
+                                                <span style={{ fontSize: '0.8rem' }}>Aguardando...</span>
+                                            )}
                                         </div>
                                     </div>
                                     <div>
-                                        <button className="btn btn-primary" onClick={handleConnect} style={{ width: '100%', marginBottom: 12 }}>
-                                            Simular Leitura QR
+                                        <button className="btn btn-primary" onClick={handleConnect} disabled={isGeneratingQr} style={{ width: '100%', marginBottom: 12 }}>
+                                            {isGeneratingQr ? 'Conectando Evolution...' : 'Gerar QR Code (Evolution API)'}
                                         </button>
                                         <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>O QR Code expira em 30 segundos.</p>
                                     </div>
@@ -97,14 +152,14 @@ const WhatsAppSetup = () => {
                             {/* Option 2: API Keys */}
                             <div style={{ padding: 20, border: '1px solid var(--border-color)', borderRadius: 12 }}>
                                 <h4 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Wifi size={18} /> Conexão via API Externa (Z-API / Evolution)
+                                    <Wifi size={18} /> Conexão via Evolution API / Z-API (BETA)
                                 </h4>
                                 <div className="form-group">
-                                    <label className="form-label" style={{ fontSize: '0.8rem' }}>URL da Instância / Base URL</label>
-                                    <input type="text" className="form-control" placeholder="https://api.seudominio.com/instance..." />
+                                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Evolution API Endpoint URL</label>
+                                    <input type="text" className="form-control" placeholder="https://evolution.seudominio.com/..." />
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Token de Autenticação (Bearer/Client-Token)</label>
+                                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Global API Key</label>
                                     <input type="password" className="form-control" placeholder="•••••••••••••••••••••" />
                                 </div>
                                 <button className="btn btn-outline" onClick={handleConnect} style={{ width: '100%', justifyContent: 'center' }}>
@@ -117,9 +172,8 @@ const WhatsAppSetup = () => {
                             <CheckCircle size={48} color="var(--success)" style={{ marginBottom: 12 }} />
                             <h3 style={{ color: 'var(--success)', marginBottom: 8 }}>Aparelho Conectado!</h3>
                             <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                <p><strong>Status:</strong> Online (Sessão Ativa)</p>
-                                <p><strong>Número Lendo:</strong> +55 19 99999-0001</p>
-                                <p><strong>Bateria:</strong> 85% ⚡</p>
+                                <p><strong>Status:</strong> Online (Conectado à API)</p>
+                                <p>Pronto para realizar testes!</p>
                             </div>
                             <button className="btn btn-primary" onClick={() => setStep(1)} style={{ marginTop: 16 }}>
                                 Próximo: Configurar Menu <ChevronRight size={16} />
@@ -197,7 +251,7 @@ const WhatsAppSetup = () => {
                                     {dep.name}
                                 </h4>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                <div className="responsive-grid-2">
                                     <div className="form-group">
                                         <label className="form-label">Atendente(s) responsável</label>
                                         <select className="form-control" defaultValue={dep.agents[0]}>
@@ -256,7 +310,7 @@ const WhatsAppSetup = () => {
                         <input type="text" className="form-control" placeholder="+55 19 99999-0000" value={testPhone} onChange={e => setTestPhone(e.target.value)} />
                     </div>
 
-                    <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}>
+                    <button className="btn btn-primary" onClick={handleSendTest} style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}>
                         <MessageSquare size={16} /> Enviar Mensagem de Teste
                     </button>
 
@@ -279,7 +333,7 @@ const WhatsAppSetup = () => {
 
                     <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
                         <button className="btn btn-outline" onClick={() => setStep(2)}>Voltar</button>
-                        <button className="btn btn-primary">
+                        <button className="btn btn-primary" onClick={handleFinish}>
                             <CheckCircle size={16} /> Finalizar e Ativar
                         </button>
                     </div>

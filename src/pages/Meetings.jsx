@@ -1,8 +1,9 @@
-import { Calendar as CalendarIcon, Clock, Video, Plus, ExternalLink, Users, FileText } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, Plus, ExternalLink, Users, FileText, CheckSquare, Edit, Link as LinkIcon, Paperclip } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const Meetings = () => {
     const [showModal, setShowModal] = useState(false);
+    const [editMeet, setEditMeet] = useState(null);
 
     // Formulario de nova reuniao
     const [newMeet, setNewMeet] = useState({
@@ -76,6 +77,12 @@ const Meetings = () => {
         setShowModal(false);
     };
 
+    const handleSaveEdit = (e) => {
+        e.preventDefault();
+        setMeetings(meetings.map(m => m.id === editMeet.id ? editMeet : m));
+        setEditMeet(null);
+    };
+
     const formatDateExt = (dStr) => {
         if (!dStr) return '';
         const today = new Date().toISOString().split('T')[0];
@@ -117,17 +124,25 @@ const Meetings = () => {
                                     <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <Users size={14} /> {m.client}
                                     </div>
-                                    {m.details && (
+                                    {m.briefing && (
                                         <div style={{ marginTop: 6, fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                            <FileText size={12} /> {m.details}
+                                            <FileText size={12} /> Briefing: {m.briefing.substring(0, 50)}...
+                                        </div>
+                                    )}
+                                    {m.checklist && (
+                                        <div style={{ marginTop: 6, fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <CheckSquare size={12} /> Checklist (ver detalhes)
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: 12 }}>
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                <button className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px' }} onClick={() => setEditMeet(m)}>
+                                    <Edit size={16} /> Detalhes
+                                </button>
                                 {m.meetLink ? (
-                                    <a href={m.meetLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+                                    <a href={m.meetLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
                                         <Video size={16} /> Entrar na Call
                                     </a>
                                 ) : (
@@ -140,6 +155,89 @@ const Meetings = () => {
                     ))}
                 </div>
             </div>
+
+            {/* Modal Editar Reunião */}
+            {editMeet && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 1000, overflowY: 'auto'
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: 600, margin: 'auto' }}>
+                        <h3 style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Detalhes da Reunião</span>
+                            <button onClick={() => setEditMeet(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem' }}>&times;</button>
+                        </h3>
+                        <form onSubmit={handleSaveEdit}>
+                            <div className="responsive-grid-2">
+                                <div className="form-group">
+                                    <label className="form-label">Título da Reunião</label>
+                                    <input type="text" className="form-control" required
+                                        value={editMeet.title} onChange={e => setEditMeet({ ...editMeet, title: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Cliente</label>
+                                    <input type="text" className="form-control" required
+                                        value={editMeet.client} onChange={e => setEditMeet({ ...editMeet, client: e.target.value })} />
+                                </div>
+                            </div>
+
+                            <div className="responsive-grid-3">
+                                <div className="form-group">
+                                    <label className="form-label">Data</label>
+                                    <input type="date" className="form-control" required
+                                        value={editMeet.date} onChange={e => setEditMeet({ ...editMeet, date: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Início</label>
+                                    <input type="time" className="form-control" required
+                                        value={editMeet.timeStart} onChange={e => setEditMeet({ ...editMeet, timeStart: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Fim</label>
+                                    <input type="time" className="form-control" required
+                                        value={editMeet.timeEnd || editMeet.timeStart} onChange={e => setEditMeet({ ...editMeet, timeEnd: e.target.value })} />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label"><LinkIcon size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Link da Videoconferência</label>
+                                <input type="url" className="form-control" placeholder="https://meet.google.com/..."
+                                    value={editMeet.meetLink || ''} onChange={e => setEditMeet({ ...editMeet, meetLink: e.target.value })} />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Briefing / Descrição</label>
+                                <textarea rows="2" className="form-control" placeholder="Briefing da reunião..." style={{ resize: 'vertical' }}
+                                    value={editMeet.briefing || editMeet.details || ''} onChange={e => setEditMeet({ ...editMeet, briefing: e.target.value })}></textarea>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label"><Paperclip size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Documentos / Anexos (Link)</label>
+                                <input type="url" className="form-control" placeholder="Link do Drive, Notion..."
+                                    value={editMeet.anexo || ''} onChange={e => setEditMeet({ ...editMeet, anexo: e.target.value })} />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label"><CheckSquare size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Checklist (um item por linha)</label>
+                                <textarea rows="3" className="form-control" placeholder="1. Analisar relatório&#10;2. Apresentar proposta" style={{ resize: 'vertical' }}
+                                    value={editMeet.checklist || ''} onChange={e => setEditMeet({ ...editMeet, checklist: e.target.value })}></textarea>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 12, marginTop: 32, justifyContent: 'space-between' }}>
+                                <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => {
+                                    setMeetings(meetings.filter(m => m.id !== editMeet.id));
+                                    setEditMeet(null);
+                                }}>Excluir</button>
+                                <div style={{ display: 'flex', gap: 12 }}>
+                                    <button type="button" className="btn btn-outline" onClick={() => setEditMeet(null)}>Voltar</button>
+                                    <button type="submit" className="btn btn-primary">Salvar Alterações</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Modal de Agendamento */}
             {showModal && (
@@ -175,7 +273,7 @@ const Meetings = () => {
                                 </select>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+                            <div className="responsive-grid-3" style={{ marginBottom: 16 }}>
                                 <div>
                                     <label className="form-label">Data</label>
                                     <input type="date" className="form-control" required

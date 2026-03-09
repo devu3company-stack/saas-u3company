@@ -56,7 +56,7 @@ const Dashboard = () => {
                         Receita (MRR)
                         <DollarSign size={18} color="var(--success)" />
                     </div>
-                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>R$ 14.500</div>
+                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>R$ 21.000</div>
                     <div style={{ marginTop: 8, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--success)' }}>
                         <ArrowUpRight size={14} /> +12% vs Mês Anterior
                     </div>
@@ -74,17 +74,6 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* KPI: WhatsApp */}
-                <div className="card" style={{ borderLeft: '4px solid #4FC3F7' }}>
-                    <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        Atendimentos (IA + Humano)
-                        <MessageSquare size={18} color="#4FC3F7" />
-                    </div>
-                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>1.284</div>
-                    <div style={{ marginTop: 8, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)' }}>
-                        <Clock size={14} /> Tempo Médio de Resp: 2m 14s
-                    </div>
-                </div>
 
                 {/* KPI: Equipe / Tarefas */}
                 <div className="card" style={{ borderLeft: '4px solid var(--warning)' }}>

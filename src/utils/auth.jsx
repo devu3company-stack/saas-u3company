@@ -12,19 +12,19 @@ const USERS = [
 // Permissões por role — define quais rotas cada papel pode acessar
 const PERMISSIONS = {
     ceo: [
-        '/dashboard', '/clientes', '/leads', '/reunioes', '/trafego',
+        '/dashboard', '/clientes', '/leads', '/prospeccao', '/reunioes', '/trafego',
         '/academy', '/metas', '/pesquisas', '/configuracoes', '/financeiro',
         '/inbox', '/whatsapp-setup', '/fluxos', '/templates', '/tarefas', '/whitelabel'
     ],
     gestor: [
-        '/dashboard', '/clientes', '/leads', '/reunioes', '/trafego',
+        '/dashboard', '/clientes', '/leads', '/prospeccao', '/reunioes', '/trafego',
         '/academy', '/inbox', '/fluxos', '/templates', '/metas', '/tarefas'
     ],
     financeiro: [
         '/dashboard', '/clientes', '/metas', '/configuracoes', '/financeiro'
     ],
     sdr: [
-        '/dashboard', '/clientes', '/leads', '/reunioes', '/inbox', '/tarefas'
+        '/dashboard', '/clientes', '/leads', '/prospeccao', '/reunioes', '/inbox', '/tarefas'
     ],
     cliente: [
         '/trafego', '/academy'

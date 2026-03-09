@@ -1,14 +1,76 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import { Send, Bot, User, Paperclip, Phone, MoreVertical, Search, Clock, Tag, ChevronDown, Loader, CheckCircle, Calendar, UserPlus } from 'lucide-react';
 import { generateAISuggestion } from '../utils/ai';
 
 const Inbox = () => {
-    const [selectedConvo, setSelectedConvo] = useState(0);
+    const [selectedConvoId, setSelectedConvoId] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [showNewContactModal, setShowNewContactModal] = useState(false);
     const [msgInput, setMsgInput] = useState('');
     const [aiSuggestion, setAiSuggestion] = useState(null);
     const [aiLoading, setAiLoading] = useState(false);
     const [toast, setToast] = useState(null);
     const [showMeetModal, setShowMeetModal] = useState(false);
+
+    // Conexão do Bridge via Socket Local (porta 3001 que escuta o ZapPro Original nas Nuvens)
+    useEffect(() => {
+        const socket = io('http://localhost:3001');
+
+        socket.on('connect', () => {
+            console.log('🟢 React CRM conectado ao Bridge (Porta 3001) com Sucesso!');
+        });
+
+        socket.on('zappro-message', (data) => {
+            console.log("📨 Mensagem Chegou no Front:", data);
+
+            // Lógica de espelhamento que injeta a msg direto no meio do chat!
+            if (data.action === 'create' && data.message) {
+                const incomingNumber = data.ticket?.contact?.number;
+                const newText = data.message.body;
+                const isFromMe = data.message.fromMe;
+
+                // Formato do relógio: "14:30"
+                const msgTime = new Date(data.message.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                setConversations(prev => {
+                    const idx = prev.findIndex(c => c.phone.replace(/\D/g, '') === incomingNumber);
+                    if (idx === -1) {
+                        // Se o contato for novo e enviou msg pra gente agora (não estava na lista lateral)
+                        const newContact = {
+                            id: Date.now(),
+                            contactName: data.ticket?.contact?.name || incomingNumber,
+                            phone: incomingNumber,
+                            department: 'Triagem',
+                            status: 'novo',
+                            unread: isFromMe ? 0 : 1,
+                            lastMsg: newText,
+                            lastTime: msgTime,
+                            tags: [],
+                            messages: [{ dir: isFromMe ? 'out' : 'in', text: newText, time: msgTime }]
+                        };
+                        showToast(`💬 Nova msg de ${newContact.contactName}!`);
+                        return [newContact, ...prev];
+                    }
+
+                    // Se a conversa já existia na lista lateral
+                    const updated = [...prev];
+                    updated[idx] = {
+                        ...updated[idx],
+                        messages: [...updated[idx].messages, { dir: isFromMe ? 'out' : 'in', text: newText, time: msgTime }],
+                        lastMsg: newText,
+                        lastTime: msgTime,
+                        unread: (updated[idx].id !== selectedConvoId && !isFromMe) ? updated[idx].unread + 1 : updated[idx].unread
+                    };
+                    return updated;
+                });
+            }
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, [selectedConvoId]);
 
     const [conversations, setConversations] = useState([
         {
@@ -49,7 +111,11 @@ const Inbox = () => {
         }
     ]);
 
-    const convo = conversations[selectedConvo];
+    const convo = conversations.find(c => c.id === selectedConvoId) || conversations[0];
+    const filteredConversations = conversations.filter(c =>
+        c.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.phone.replace(/\D/g, '').includes(searchTerm.replace(/\D/g, ''))
+    );
 
     const showToast = (msg) => {
         setToast(msg);
@@ -61,18 +127,46 @@ const Inbox = () => {
         return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     };
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!msgInput.trim()) return;
+
+        const currentMsg = msgInput;
+        // Limpa estado para dar feedback visual na hora
+        setMsgInput('');
+        setAiSuggestion(null);
+
+        const currentConvoId = convo.id;
+        const idx = conversations.findIndex(c => c.id === currentConvoId);
+        if (idx === -1) return;
+
         const updated = [...conversations];
-        updated[selectedConvo] = {
-            ...updated[selectedConvo],
-            messages: [...updated[selectedConvo].messages, { dir: 'out', text: msgInput, time: now() }],
-            lastMsg: msgInput,
+        updated[idx] = {
+            ...updated[idx],
+            messages: [...updated[idx].messages, { dir: 'out', text: currentMsg, time: now() }],
+            lastMsg: currentMsg,
             lastTime: now()
         };
         setConversations(updated);
-        setMsgInput('');
-        setAiSuggestion(null);
+
+        // Disparo Real para a API (ZapPro / Evolution Backend Local)
+        try {
+            const response = await fetch('http://localhost:3001/api/whatsapp/send-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    instanceName: 'U3Company',
+                    number: convo.phone.replace(/\D/g, ''), // Puxa apenas os números do contato na tela
+                    text: currentMsg
+                })
+            });
+            const data = await response.json();
+            if (!data.success) {
+                showToast(`❌ Falha ao enviar ao WhatsApp: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Erro na comunicação com o backend:", error);
+            showToast("❌ Servidor local de mensagens indisponível.");
+        }
     };
 
     const handleAiSuggest = async () => {
@@ -84,11 +178,13 @@ const Inbox = () => {
     };
 
     const handleConvertClient = () => {
+        const idx = conversations.findIndex(c => c.id === convo.id);
+        if (idx === -1) return;
         const updated = [...conversations];
-        updated[selectedConvo] = {
-            ...updated[selectedConvo],
+        updated[idx] = {
+            ...updated[idx],
             status: 'fechado',
-            tags: [...updated[selectedConvo].tags, 'Convertido ✅']
+            tags: [...updated[idx].tags, 'Convertido ✅']
         };
         setConversations(updated);
         showToast(`✅ ${convo.contactName} convertido em cliente com sucesso!`);
@@ -177,18 +273,23 @@ const Inbox = () => {
             {/* Lista de conversas */}
             <div style={{ borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-secondary)' }}>
                 <div style={{ padding: 16, borderBottom: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, padding: '8px 12px' }}>
-                        <Search size={16} color="var(--text-muted)" />
-                        <input type="text" placeholder="Buscar conversa..." style={{ border: 'none', background: 'none', color: 'var(--text-main)', outline: 'none', width: '100%', fontFamily: 'inherit' }} />
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, padding: '8px 12px' }}>
+                            <Search size={16} color="var(--text-muted)" />
+                            <input type="text" placeholder="Buscar conversa..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ border: 'none', background: 'none', color: 'var(--text-main)', outline: 'none', width: '100%', fontFamily: 'inherit' }} />
+                        </div>
+                        <button className="btn btn-primary" onClick={() => setShowNewContactModal(true)} style={{ padding: '8px 12px' }} title="Novo Contato">
+                            <UserPlus size={16} />
+                        </button>
                     </div>
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {conversations.map((c, i) => (
-                        <div key={c.id} onClick={() => setSelectedConvo(i)}
+                    {filteredConversations.map((c) => (
+                        <div key={c.id} onClick={() => setSelectedConvoId(c.id)}
                             style={{
                                 padding: '16px', cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
-                                backgroundColor: selectedConvo === i ? 'var(--bg-tertiary)' : 'transparent',
-                                borderLeft: selectedConvo === i ? '3px solid var(--accent-color)' : '3px solid transparent'
+                                backgroundColor: selectedConvoId === c.id ? 'var(--bg-tertiary)' : 'transparent',
+                                borderLeft: selectedConvoId === c.id ? '3px solid var(--accent-color)' : '3px solid transparent'
                             }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                                 <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{c.contactName}</span>
@@ -376,7 +477,7 @@ const Inbox = () => {
                                 <label className="form-label">Título</label>
                                 <input name="meetTitle" type="text" className="form-control" required defaultValue={`Alinhamento — ${convo.contactName}`} />
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                            <div className="responsive-grid-3">
                                 <div className="form-group">
                                     <label className="form-label">Data</label>
                                     <input name="meetDate" type="date" className="form-control" required />
@@ -398,6 +499,63 @@ const Inbox = () => {
                                 <button type="button" className="btn btn-outline" onClick={() => setShowMeetModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     <Calendar size={16} /> Salvar no Google Agenda
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* Modal Novo Contato */}
+            {showNewContactModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: 400 }}>
+                        <h3 style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <UserPlus size={20} color="var(--accent-color)" /> Novo Contato
+                        </h3>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.target);
+                            const newContact = {
+                                id: Date.now(),
+                                contactName: formData.get('nome'),
+                                phone: formData.get('telefone'),
+                                department: formData.get('departamento'),
+                                status: 'novo',
+                                unread: 0,
+                                lastMsg: '',
+                                lastTime: now(),
+                                tags: [],
+                                messages: []
+                            };
+                            setConversations([newContact, ...conversations]);
+                            setSelectedConvoId(newContact.id);
+                            setShowNewContactModal(false);
+                            showToast(`✅ Contato ${newContact.contactName} adicionado!`);
+                        }}>
+                            <div className="form-group">
+                                <label className="form-label">Nome do Contato</label>
+                                <input name="nome" type="text" className="form-control" placeholder="Ex: João Silva" required />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">WhatsApp (com DDD)</label>
+                                <input name="telefone" type="text" className="form-control" placeholder="Ex: 11999999999" required />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Departamento Inicial</label>
+                                <select name="departamento" className="form-control">
+                                    <option>Comercial</option>
+                                    <option>Administrativo</option>
+                                    <option>Pós-vendas</option>
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn btn-outline" onClick={() => setShowNewContactModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <CheckCircle size={16} /> Salvar Contato
                                 </button>
                             </div>
                         </form>

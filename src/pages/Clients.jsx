@@ -129,7 +129,7 @@ const Clients = () => {
                                 <label className="form-label">Pessoa de Contato</label>
                                 <input name="contato" type="text" className="form-control" required placeholder="Ex: Ricardo (Diretor)" />
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="responsive-grid-2">
                                 <div className="form-group">
                                     <label className="form-label">WhatsApp</label>
                                     <input name="whatsapp" type="text" className="form-control" required placeholder="(11) 99999-9999" />

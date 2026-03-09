@@ -1,12 +1,23 @@
-import { useState } from 'react';
-import { DollarSign, AlertCircle, TrendingDown, Plus, CreditCard, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, AlertCircle, TrendingDown, TrendingUp, Plus, CreditCard, Calendar, Wallet } from 'lucide-react';
 
 const Financeiro = () => {
-    const [custos, setCustos] = useState([
-        { id: 1, descricao: 'Google Workspace', valor: 'R$ 145,00', data: '20/02/2026', categoria: 'Software' },
-        { id: 2, descricao: 'Meta Ads (Tráfego U3)', valor: 'R$ 1.500,00', data: '18/02/2026', categoria: 'Marketing' },
-        { id: 3, descricao: 'Vercel Pro', valor: 'R$ 100,00', data: '15/02/2026', categoria: 'Infraestrutura' }
-    ]);
+    const [custos, setCustos] = useState(() => {
+        const saved = localStorage.getItem('u3_custos');
+        if (saved) return JSON.parse(saved);
+        return [
+            { id: 1, descricao: 'Google Workspace', valorNum: 145.00, data: '20/02/2026', categoria: 'Software' },
+            { id: 2, descricao: 'Meta Ads (Tráfego U3)', valorNum: 1500.00, data: '18/02/2026', categoria: 'Marketing' },
+            { id: 3, descricao: 'Vercel Pro', valorNum: 100.00, data: '15/02/2026', categoria: 'Infraestrutura' }
+        ];
+    });
+
+    const [caixa, setCaixa] = useState(() => {
+        const saved = localStorage.getItem('u3_caixa');
+        return saved ? Number(saved) : 50000;
+    });
+
+    const [mrrAtual, setMrrAtual] = useState(21000); // Exemplo fixo ou pega do localStorage
 
     const [inadimplentes, setInadimplentes] = useState([
         { id: 1, cliente: 'AlphaTech Solutions', valor: 'R$ 1.250,00', vencimento: '10/02/2026', status: 'Atrasado (11 dias)', telefone: '(11) 98765-4321' },
@@ -14,14 +25,26 @@ const Financeiro = () => {
     ]);
 
     const [showCustoModal, setShowCustoModal] = useState(false);
+    const [showCaixaModal, setShowCaixaModal] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('u3_custos', JSON.stringify(custos));
+        localStorage.setItem('u3_caixa', caixa.toString());
+    }, [custos, caixa]);
+
+    const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
+    const totalCustos = custos.reduce((acc, curr) => acc + (curr.valorNum || 0), 0);
+    const saldoLiquido = mrrAtual - totalCustos;
 
     const handleAddCusto = (e) => {
         e.preventDefault();
         const form = e.target;
+        const vText = form.valor.value.replace(/\./g, '').replace(',', '.').replace(/[^\d.]/g, '');
         const novoCusto = {
             id: Date.now(),
             descricao: form.descricao.value,
-            valor: `R$ ${form.valor.value}`,
+            valorNum: Number(vText),
             data: form.data.value.split('-').reverse().join('/'),
             categoria: form.categoria.value
         };
@@ -38,27 +61,49 @@ const Financeiro = () => {
                 </div>
             </div>
 
-            <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
-                <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                <div className="card" style={{ borderLeft: '4px solid var(--success)' }}>
                     <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <AlertCircle size={18} color="var(--danger)" />
-                        Total em Inadimplência
+                        <TrendingUp size={18} color="var(--success)" />
+                        MRR Atual
                     </div>
-                    <div className="card-value" style={{ color: 'var(--danger)' }}>R$ 2.050,00</div>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>2 clientes pendentes</p>
+                    <div className="card-value" style={{ color: 'var(--success)' }}>{formatCurrency(mrrAtual)}</div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>Receita recorrente</p>
                 </div>
 
-                <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div className="card" style={{ borderLeft: '4px solid var(--danger)' }}>
                     <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <TrendingDown size={18} color="var(--warning)" />
-                        Custos Lançados (Mês)
+                        <TrendingDown size={18} color="var(--danger)" />
+                        Total de Despesas
                     </div>
-                    <div className="card-value">R$ 1.745,00</div>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>Fevereiro/2026</p>
+                    <div className="card-value" style={{ color: 'var(--danger)' }}>{formatCurrency(totalCustos)}</div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>Custos mensais salvos</p>
+                </div>
+
+                <div className="card" style={{ borderLeft: '4px solid #4FC3F7' }}>
+                    <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <DollarSign size={18} color="#4FC3F7" />
+                        Saldo Líquido
+                    </div>
+                    <div className="card-value" style={{ color: saldoLiquido >= 0 ? 'var(--text-main)' : 'var(--danger)' }}>
+                        {formatCurrency(saldoLiquido)}
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>MRR - Despesas</p>
+                </div>
+
+                <div className="card" style={{ borderLeft: '4px solid var(--accent-color)', cursor: 'pointer' }} onClick={() => setShowCaixaModal(true)}>
+                    <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Wallet size={18} color="var(--accent-color)" />
+                            Valor em Caixa
+                        </div>
+                    </div>
+                    <div className="card-value" style={{ color: 'var(--accent-color)' }}>{formatCurrency(caixa)}</div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>Clique para editar</p>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div className="responsive-grid-2" style={{ gap: 24 }}>
                 {/* Coluna Inadimplentes */}
                 <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -123,10 +168,15 @@ const Financeiro = () => {
                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{item.data}</div>
                                     </td>
                                     <td style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', textAlign: 'right', fontWeight: 600 }}>
-                                        {item.valor}
+                                        {formatCurrency(item.valorNum)}
                                     </td>
                                 </tr>
                             ))}
+                            {custos.length === 0 && (
+                                <tr>
+                                    <td colSpan="3" style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Nenhum custo cadastrado</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -159,7 +209,7 @@ const Financeiro = () => {
                                     <option>Outros</option>
                                 </select>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="responsive-grid-2">
                                 <div className="form-group">
                                     <label className="form-label">Valor (R$)</label>
                                     <input name="valor" type="text" className="form-control" required placeholder="0,00" />
@@ -173,6 +223,37 @@ const Financeiro = () => {
                                 <button type="button" className="btn btn-outline" onClick={() => setShowCustoModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     Confirmar Lançamento
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* Modal de Caixa Atual */}
+            {showCaixaModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: 400 }}>
+                        <h3 style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Wallet size={20} color="var(--accent-color)" /> Atualizar Caixa
+                        </h3>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const vText = e.target.caixaValor.value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+                            setCaixa(Number(vText));
+                            setShowCaixaModal(false);
+                        }}>
+                            <div className="form-group">
+                                <label className="form-label">Valor em Caixa Atual (R$)</label>
+                                <input name="caixaValor" type="text" className="form-control" required defaultValue={caixa} placeholder="0,00" />
+                            </div>
+                            <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn btn-outline" onClick={() => setShowCaixaModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    Atualizar
                                 </button>
                             </div>
                         </form>

@@ -150,13 +150,99 @@ const ClientDetail = () => {
                                 <Calendar size={18} /> Próximas Reuniões
                             </h3>
                             <table style={{ width: '100%' }}>
-                                <thead><tr><th>Data</th><th>Título</th><th>Status</th><th>Link</th></tr></thead>
+                                <thead><tr><th style={{ textAlign: 'left' }}>Data</th><th style={{ textAlign: 'left' }}>Título</th><th style={{ textAlign: 'left' }}>Status</th><th style={{ textAlign: 'left' }}>Link</th></tr></thead>
                                 <tbody>
-                                    <tr><td>22/02/2026</td><td>Alinhamento Quinzenal</td><td><span className="badge ativo" style={{ background: 'transparent', border: '1px solid var(--accent-color)' }}>Agendada</span></td><td><a href="#" style={{ color: 'var(--accent-color)' }}>Google Meet</a></td></tr>
-                                    <tr><td>10/01/2026</td><td>Onboarding e Setup</td><td><span className="badge" style={{ backgroundColor: 'var(--success)', color: 'white' }}>Realizada</span></td><td>-</td></tr>
+                                    <tr><td style={{ padding: '8px 0' }}>22/02/2026</td><td>Alinhamento Quinzenal</td><td><span className="badge ativo" style={{ background: 'transparent', border: '1px solid var(--accent-color)' }}>Agendada</span></td><td><a href="#" style={{ color: 'var(--accent-color)' }}>Google Meet</a></td></tr>
+                                    <tr><td style={{ padding: '8px 0' }}>10/01/2026</td><td>Onboarding e Setup</td><td><span className="badge" style={{ backgroundColor: 'var(--success)', color: 'white' }}>Realizada</span></td><td>-</td></tr>
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                )}
+
+                {activeTab === 'onboarding' && (
+                    <div className="card">
+                        <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <CheckSquare size={18} /> Trilha de Onboarding
+                        </h3>
+                        <p className="text-muted" style={{ marginBottom: 24 }}>Acompanhe os passos iniciais deste cliente.</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {onboardingSteps.map(step => (
+                                <div key={step.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                                    <input type="checkbox" checked={step.done} onChange={() => toggleStep(step.id)} style={{ width: 20, height: 20, cursor: 'pointer' }} />
+                                    <div style={{ flex: 1, textDecoration: step.done ? 'line-through' : 'none', opacity: step.done ? 0.6 : 1 }}>
+                                        <div style={{ fontWeight: 600 }}>{step.title}</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{step.desc}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'crm' && (
+                    <div className="card">
+                        <h3 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Users size={18} /> Pipeline do Cliente
+                        </h3>
+                        <div className="grid-cards">
+                            {funnelStages.map(stage => (
+                                <div key={stage.name} className="card" style={{ borderTop: `4px solid ${stage.color}`, backgroundColor: 'var(--bg-tertiary)' }}>
+                                    <div className="card-title" style={{ fontSize: '0.85rem' }}>{stage.name}</div>
+                                    <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>{stage.count}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'midia' && (
+                    <div className="card">
+                        <h3 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <BarChart2 size={18} /> Resumo de Performance Mídia
+                        </h3>
+                        <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+                            <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)' }}><div className="text-muted" style={{ fontSize: '0.85rem' }}>Investimento</div><div style={{ fontSize: '1.5rem', fontWeight: 600, marginTop: 8 }}>R$ 1.250</div></div>
+                            <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)' }}><div className="text-muted" style={{ fontSize: '0.85rem' }}>Impressões</div><div style={{ fontSize: '1.5rem', fontWeight: 600, marginTop: 8 }}>45.200</div></div>
+                            <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)' }}><div className="text-muted" style={{ fontSize: '0.85rem' }}>Cliques</div><div style={{ fontSize: '1.5rem', fontWeight: 600, marginTop: 8 }}>1.204</div></div>
+                            <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)' }}><div className="text-muted" style={{ fontSize: '0.85rem' }}>Leads</div><div style={{ fontSize: '1.5rem', fontWeight: 600, marginTop: 8, color: 'var(--success)' }}>120</div></div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'tarefas' && (
+                    <div className="card">
+                        <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <CheckCircle size={18} /> Tarefas da Equipe para {client.name}
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {clientTasks.map(task => (
+                                <div key={task.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            {task.status === 'concluida' ? <CheckCircle size={16} color="var(--success)" /> : <Clock size={16} color="var(--warning)" />}
+                                            {task.title}
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>Resp: {task.resp}</div>
+                                    </div>
+                                    <span className={`badge ${task.status === 'concluida' ? 'ativo' : 'pendente'}`}>{task.status.toUpperCase().replace('_', ' ')}</span>
+                                </div>
+                            ))}
+                        </div>
+                        {clientTasks.length === 0 && (
+                            <p className="text-muted">Nenhuma tarefa encontrada para este cliente.</p>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'cofre' && (
+                    <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 40 }}>
+                        <Shield size={48} color="var(--accent-color)" style={{ marginBottom: 16 }} />
+                        <h3 style={{ marginBottom: 8 }}>Cofre de Senhas</h3>
+                        <p className="text-muted" style={{ textAlign: 'center', maxWidth: 400 }}>Acesso restrito. Somente usuários com permissão "Admin" ou "Gestor de Tráfego" podem ver as senhas cadastradas (BM, Google, WordPress, etc).</p>
+                        <button className="btn btn-primary" style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Lock size={16} /> Desbloquear Cofre de {client.name}
+                        </button>
                     </div>
                 )}
 

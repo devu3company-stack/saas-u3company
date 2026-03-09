@@ -14,7 +14,7 @@ const Surveys = () => {
                     <h2>Pesquisas de Satisfação (NPS)</h2>
                     <p className="text-muted">Feedback dos clientes</p>
                 </div>
-                <button className="btn btn-outline"><BarChart2 size={16} /> Relatório Completo</button>
+                <button className="btn btn-outline" onClick={() => alert("Gerando Relatório Completo Avançado em PDF... Isso será enviado para o seu e-mail do sistema.")}><BarChart2 size={16} /> Relatório Completo</button>
             </div>
 
             <div className="grid-cards">

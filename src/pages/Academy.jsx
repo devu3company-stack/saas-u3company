@@ -17,13 +17,29 @@ const Academy = () => {
         return JSON.parse(localStorage.getItem('u3_roadmaps') || '{}');
     });
 
+    const [academySettings, setAcademySettings] = useState(() => {
+        return JSON.parse(localStorage.getItem('u3_academy_settings') || '{}');
+    });
+
     const currentRoadmap = roadmaps[selectedClient] || defaultRoadmap;
+    const currentSettings = academySettings[selectedClient] || { ltv: 15000 };
 
     const saveRoadmap = (updatedRoadmap) => {
         const newRoadmaps = { ...roadmaps, [selectedClient]: updatedRoadmap };
         setRoadmaps(newRoadmaps);
         localStorage.setItem('u3_roadmaps', JSON.stringify(newRoadmaps));
     };
+
+    const saveSettings = (newSettings) => {
+        const updated = { ...academySettings, [selectedClient]: newSettings };
+        setAcademySettings(updated);
+        localStorage.setItem('u3_academy_settings', JSON.stringify(updated));
+    };
+
+    const activeStepsCount = currentRoadmap.filter(s => s.active).length;
+    const totalSteps = currentRoadmap.length;
+    const progressPercent = totalSteps > 0 ? Math.round((activeStepsCount / totalSteps) * 100) : 0;
+    const currentMonth = activeStepsCount === 0 ? 1 : activeStepsCount;
 
     const handleUpdateStep = (index, field, value) => {
         const updated = [...currentRoadmap];
@@ -69,34 +85,50 @@ const Academy = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 24 }}>
+            <div className="responsive-grid-sidebar">
                 <div>
                     {/* LTV e Resumo Estratégico */}
                     <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 24, gap: 16 }}>
                         <div className="card" style={{ padding: 16 }}>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Mês Atual de Contrato</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-color)' }}>Mês 1 / 6</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-color)' }}>Mês {currentMonth} / {totalSteps}</div>
                         </div>
                         <div className="card" style={{ padding: 16 }}>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>LTV (Valor no Tempo)</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>R$ 15.000</div>
+                            {isEditingRoadmap ? (
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    value={currentSettings.ltv}
+                                    onChange={e => saveSettings({ ...currentSettings, ltv: Number(e.target.value) })}
+                                    style={{ marginTop: 4 }}
+                                />
+                            ) : (
+                                <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(currentSettings.ltv)}
+                                </div>
+                            )}
                         </div>
                         <div className="card" style={{ padding: 16 }}>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Status do Projeto</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--success)' }}>On Track</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: progressPercent >= 100 ? 'var(--success)' : progressPercent === 0 ? 'var(--text-muted)' : 'var(--warning)' }}>
+                                {progressPercent >= 100 ? 'Concluído' : progressPercent === 0 ? 'A Iniciar' : 'Em Andamento'}
+                            </div>
                         </div>
                     </div>
 
                     <div className="card" style={{ marginBottom: 24 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <h3 style={{ margin: 0 }}>Comece por aqui (Onboarding obrigatório)</h3>
-                            <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Salvar Progresso</button>
+                            <h3 style={{ margin: 0 }}>Progresso do Onboarding / Escala</h3>
+                            <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => setIsEditingRoadmap(!isEditingRoadmap)}>
+                                {isEditingRoadmap ? 'Concluir Edição' : 'Configurar Trilha'}
+                            </button>
                         </div>
 
                         <div style={{ width: '100%', backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, overflow: 'hidden', height: 16, marginBottom: 8 }}>
-                            <div style={{ width: '33%', height: '100%', backgroundColor: 'var(--accent-color)' }}></div>
+                            <div style={{ width: `${progressPercent}%`, height: '100%', backgroundColor: progressPercent === 100 ? 'var(--success)' : 'var(--accent-color)', transition: 'width 0.3s ease' }}></div>
                         </div>
-                        <p className="text-muted" style={{ fontSize: '0.85rem' }}>Progresso: 33% (1 de 3 concluídos)</p>
+                        <p className="text-muted" style={{ fontSize: '0.85rem' }}>Progresso: {progressPercent}% ({activeStepsCount} de {totalSteps} concluídos)</p>
                     </div>
 
                     {/* Timeline de Entregas por Mês */}

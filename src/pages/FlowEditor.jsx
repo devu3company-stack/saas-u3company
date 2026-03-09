@@ -98,7 +98,7 @@ const FlowEditor = () => {
                             <option>Fluxo: Cobrança Automática</option>
                         </select>
                     </div>
-                    <button className="btn btn-outline" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><Play size={16} /> Testar Fluxo</button>
+                    <button className="btn btn-outline" onClick={() => alert("Fluxo encaminhado para fila de teste simulada. Verifique seu Whatsapp associado!")} style={{ display: 'flex', gap: 8, alignItems: 'center' }}><Play size={16} /> Testar Fluxo</button>
                     <button className="btn btn-primary" onClick={handleSave} disabled={isSaving} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <Save size={16} /> {isSaving ? 'Salvando...' : 'Publicar'}
                     </button>

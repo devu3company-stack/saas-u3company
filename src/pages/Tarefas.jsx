@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../utils/auth';
-import { Plus, CheckCircle, Clock, Calendar, AlertCircle, PlayCircle, StopCircle, User, LayoutGrid, List } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Calendar, AlertCircle, PlayCircle, StopCircle, User, LayoutGrid, List, Flag, Tag as TagIcon } from 'lucide-react';
 
 const Tarefas = () => {
     const { user, USERS } = useAuth();
@@ -9,9 +9,9 @@ const Tarefas = () => {
         const saved = localStorage.getItem('u3_tarefas');
         if (saved) return JSON.parse(saved);
         return [
-            { id: 1, titulo: 'Ligar para Lead (Imobiliária)', descricao: 'Entrar em contato para fechar proposta final.', cliente: 'Imobiliária Prime', responsavel: 'SDR U3', dataEntrega: '2026-02-21', status: 'pendente', tempoExecucao: 0, iniciadaEm: null },
-            { id: 2, titulo: 'Ajustar Campanha Meta Ads', descricao: 'Otimizar o custo por lead (CPL)', cliente: 'AlphaTech Solutions', responsavel: 'GESTOR U3', dataEntrega: '2026-02-22', status: 'em_andamento', tempoExecucao: 1540, iniciadaEm: Date.now() - 1540000 },
-            { id: 3, titulo: 'Reunião Kickoff AlphaTech', descricao: 'Apresentar cronograma do projeto', cliente: 'AlphaTech Solutions', responsavel: 'CEO U3', dataEntrega: '2026-02-20', status: 'concluida', tempoExecucao: 3600, iniciadaEm: null }
+            { id: 1, titulo: 'Ligar para Lead (Imobiliária)', descricao: 'Entrar em contato para fechar proposta final.', cliente: 'Imobiliária Prime', responsavel: 'SDR U3', dataEntrega: '2026-02-21', status: 'pendente', tempoExecucao: 0, iniciadaEm: null, prioridade: 'alta', tags: ['Vendas', 'Call'], cardColor: '#ffffff', referencias: '' },
+            { id: 2, titulo: 'Ajustar Campanha Meta Ads', descricao: 'Otimizar o custo por lead (CPL)', cliente: 'AlphaTech Solutions', responsavel: 'GESTOR U3', dataEntrega: '2026-02-22', status: 'em_andamento', tempoExecucao: 1540, iniciadaEm: Date.now() - 1540000, prioridade: 'urgente', tags: ['Marketing', 'Ads'], cardColor: '#ffcccc', referencias: 'Ver drive de criativos' },
+            { id: 3, titulo: 'Reunião Kickoff AlphaTech', descricao: 'Apresentar cronograma do projeto', cliente: 'AlphaTech Solutions', responsavel: 'CEO U3', dataEntrega: '2026-02-20', status: 'concluida', tempoExecucao: 3600, iniciadaEm: null, prioridade: 'normal', tags: ['Reunião', 'Onboarding'], cardColor: '#ccffcc', referencias: '' }
         ];
     });
 
@@ -31,6 +31,7 @@ const Tarefas = () => {
     }, []);
 
     const [modalOpen, setModalOpen] = useState(false);
+    const [editTask, setEditTask] = useState(null);
     const [viewMode, setViewMode] = useState('kanban'); // 'list' ou 'kanban'
 
     // Timer para atualizar o tempo na tela se estiver em andamento
@@ -45,6 +46,16 @@ const Tarefas = () => {
         }, 1000);
         return () => clearInterval(interval);
     }, []);
+
+    const getPriorityColor = (prioridade) => {
+        switch (prioridade) {
+            case 'urgente': return 'var(--danger, #ef4444)';
+            case 'alta': return 'var(--warning, #f59e0b)';
+            case 'normal': return 'var(--info, #3b82f6)';
+            case 'baixa': return 'var(--text-muted, #9ca3af)';
+            default: return 'var(--text-muted, #9ca3af)';
+        }
+    };
 
     const formatTime = (seconds) => {
         const h = Math.floor(seconds / 3600);
@@ -63,12 +74,39 @@ const Tarefas = () => {
             cliente: form.cliente.value,
             responsavel: form.responsavel.value,
             dataEntrega: form.dataEntrega.value,
+            prioridade: form.prioridade.value,
+            tags: form.tags.value.split(',').map(t => t.trim()).filter(t => t),
             status: 'pendente',
             tempoExecucao: 0,
-            iniciadaEm: null
+            iniciadaEm: null,
+            cardColor: form.cardColor?.value || 'transparent',
+            referencias: form.referencias?.value || ''
         };
         setTarefas([novaTarefa, ...tarefas]);
         setModalOpen(false);
+    };
+
+    const handleSaveEdit = (e) => {
+        e.preventDefault();
+        const form = e.target;
+        setTarefas(tarefas.map(t => {
+            if (t.id === editTask.id) {
+                return {
+                    ...t,
+                    titulo: form.titulo.value,
+                    descricao: form.descricao.value,
+                    cliente: form.cliente.value,
+                    responsavel: form.responsavel.value,
+                    dataEntrega: form.dataEntrega.value,
+                    prioridade: form.prioridade.value,
+                    tags: form.tags.value.split(',').map(t => t.trim()).filter(t => t),
+                    cardColor: form.cardColor.value,
+                    referencias: form.referencias.value
+                };
+            }
+            return t;
+        }));
+        setEditTask(null);
     };
 
     const updateStatus = (id, newStatus) => {
@@ -176,23 +214,48 @@ const Tarefas = () => {
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, tarefa.id)}
                                     className="card"
+                                    onClick={() => setEditTask(tarefa)}
                                     style={{
                                         padding: 16, margin: 0, cursor: 'grab', position: 'relative',
-                                        border: tarefa.status === 'em_andamento' ? '1px solid var(--warning)' : '1px solid transparent',
+                                        borderTop: `6px solid ${tarefa.cardColor && tarefa.cardColor !== 'transparent' ? tarefa.cardColor : 'transparent'}`,
+                                        border: tarefa.status === 'em_andamento' ? '1px solid var(--warning)' : '1px solid var(--border-color)',
                                         opacity: tarefa.status === 'concluida' ? 0.6 : 1
                                     }}
                                 >
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-main)', marginBottom: 8, display: 'inline-block', backgroundColor: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: 4 }}>
-                                        {tarefa.cliente}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-main)', display: 'inline-block', backgroundColor: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: 4 }}>
+                                            {tarefa.cliente}
+                                        </div>
+                                        {tarefa.prioridade && (
+                                            <div title={`Prioridade ${tarefa.prioridade}`} style={{ color: getPriorityColor(tarefa.prioridade) }}>
+                                                <Flag size={14} fill={getPriorityColor(tarefa.prioridade)} />
+                                            </div>
+                                        )}
                                     </div>
                                     <h4 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', textDecoration: tarefa.status === 'concluida' ? 'line-through' : 'none' }}>
                                         {tarefa.titulo}
                                     </h4>
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.4 }}>
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.4 }}>
                                         {tarefa.descricao}
                                     </p>
 
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
+                                    {tarefa.referencias && (
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-main)', padding: 8, borderRadius: 6, marginBottom: 12, border: '1px dashed var(--border-color)' }}>
+                                            <strong>Ref/Obs:</strong> {tarefa.referencias}
+                                        </div>
+                                    )}
+
+                                    {tarefa.tags && tarefa.tags.length > 0 && (
+                                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 12 }}>
+                                            {tarefa.tags.map((tag, i) => (
+                                                <span key={i} style={{ fontSize: '0.65rem', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '2px 6px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)' }}>
+                                                    <TagIcon size={10} /> {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', marginBottom: 12 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)' }}>
                                             <Calendar size={12} /> {tarefa.dataEntrega.split('-').reverse().join('/')}
                                         </div>
@@ -204,7 +267,7 @@ const Tarefas = () => {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid var(--border-color)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 600 }}>
                                             <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 {tarefa.responsavel[0]}
@@ -264,6 +327,7 @@ const Tarefas = () => {
                             <thead>
                                 <tr>
                                     <th>Tarefa / Responsável</th>
+                                    <th>Prioridade</th>
                                     <th>Prazo de Entrega</th>
                                     <th>Tempo Execução {user.role === 'ceo' && '(Visão CEO)'}</th>
                                     <th style={{ textAlign: 'right' }}>Ações</th>
@@ -273,8 +337,11 @@ const Tarefas = () => {
                                 {tarefas.map(tarefa => (
                                     <tr key={tarefa.id} style={{ opacity: tarefa.status === 'concluida' ? 0.6 : 1 }}>
                                         <td>
-                                            <div style={{ fontWeight: 600, textDecoration: tarefa.status === 'concluida' ? 'line-through' : 'none' }}>
+                                            <div style={{ fontWeight: 600, textDecoration: tarefa.status === 'concluida' ? 'line-through' : 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
                                                 {tarefa.titulo}
+                                                {tarefa.tags && tarefa.tags.map((tag, i) => (
+                                                    <span key={i} style={{ fontSize: '0.6rem', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '2px 6px', borderRadius: 12, fontWeight: 'normal', color: 'var(--text-muted)' }}>{tag}</span>
+                                                ))}
                                             </div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
                                                 {tarefa.descricao}
@@ -286,6 +353,12 @@ const Tarefas = () => {
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                                     <User size={12} /> {tarefa.responsavel}
                                                 </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', color: getPriorityColor(tarefa.prioridade) }}>
+                                                <Flag size={14} fill={getPriorityColor(tarefa.prioridade)} />
+                                                {tarefa.prioridade ? tarefa.prioridade.charAt(0).toUpperCase() + tarefa.prioridade.slice(1) : '-'}
                                             </div>
                                         </td>
                                         <td>
@@ -359,7 +432,24 @@ const Tarefas = () => {
                                     ))}
                                 </select>
                             </div>
-                            <div style={{ display: 'flex', gap: 16 }}>
+
+                            <div className="responsive-flex">
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label className="form-label">Prioridade</label>
+                                    <select name="prioridade" className="form-control" required defaultValue="normal">
+                                        <option value="baixa">Baixa</option>
+                                        <option value="normal">Normal</option>
+                                        <option value="alta">Alta</option>
+                                        <option value="urgente">Urgente</option>
+                                    </select>
+                                </div>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label className="form-label">Tags (separadas por vírgula)</label>
+                                    <input name="tags" type="text" className="form-control" placeholder="Ex: design, call" />
+                                </div>
+                            </div>
+
+                            <div className="responsive-flex">
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label className="form-label">Atribuir para:</label>
                                     <select name="responsavel" className="form-control" required>
@@ -372,11 +462,98 @@ const Tarefas = () => {
                                     <label className="form-label">Entrega</label>
                                     <input name="dataEntrega" type="date" className="form-control" required />
                                 </div>
+                                <div className="form-group" style={{ width: 100 }}>
+                                    <label className="form-label">Cor do Card</label>
+                                    <input name="cardColor" type="color" className="form-control" defaultValue="#ffffff" style={{ height: 42, padding: 4 }} />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Referências / Links / Anexos</label>
+                                <textarea name="referencias" rows="2" className="form-control" placeholder="Links do drive, referências visuais, etc"></textarea>
                             </div>
 
                             <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'flex-end' }}>
                                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">Atribuir Tarefa</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Editar Tarefa */}
+            {editTask && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, overflowY: 'auto' }}>
+                    <div className="card" style={{ width: 500, margin: 'auto' }}>
+                        <h3 style={{ marginBottom: 24 }}>Editar Tarefa</h3>
+                        <form onSubmit={handleSaveEdit}>
+                            <div className="form-group">
+                                <label className="form-label">Título da Tarefa</label>
+                                <input name="titulo" type="text" className="form-control" defaultValue={editTask.titulo} required />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Descrição</label>
+                                <textarea name="descricao" rows="2" className="form-control" defaultValue={editTask.descricao} required style={{ resize: 'none' }}></textarea>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Cliente Referente</label>
+                                <select name="cliente" className="form-control" defaultValue={editTask.cliente} required>
+                                    {clientes.map(c => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="responsive-flex">
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label className="form-label">Prioridade</label>
+                                    <select name="prioridade" className="form-control" defaultValue={editTask.prioridade} required>
+                                        <option value="baixa">Baixa</option>
+                                        <option value="normal">Normal</option>
+                                        <option value="alta">Alta</option>
+                                        <option value="urgente">Urgente</option>
+                                    </select>
+                                </div>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label className="form-label">Tags</label>
+                                    <input name="tags" type="text" className="form-control" defaultValue={(editTask.tags || []).join(', ')} />
+                                </div>
+                            </div>
+
+                            <div className="responsive-flex">
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label className="form-label">Responsável</label>
+                                    <select name="responsavel" className="form-control" defaultValue={editTask.responsavel} required>
+                                        {USERS.filter(u => u.role !== 'cliente').map(u => (
+                                            <option key={u.id} value={u.name}>{u.name} ({u.role.toUpperCase()})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group" style={{ width: 140 }}>
+                                    <label className="form-label">Entrega</label>
+                                    <input name="dataEntrega" type="date" className="form-control" defaultValue={editTask.dataEntrega} required />
+                                </div>
+                                <div className="form-group" style={{ width: 80 }}>
+                                    <label className="form-label">Cor</label>
+                                    <input name="cardColor" type="color" className="form-control" defaultValue={editTask.cardColor || '#ffffff'} style={{ height: 42, padding: 4 }} />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Referências / Links / Anexos</label>
+                                <textarea name="referencias" rows="3" className="form-control" defaultValue={editTask.referencias} placeholder="Links do drive, referências visuais, etc"></textarea>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'space-between' }}>
+                                <button type="button" className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }} onClick={() => {
+                                    setTarefas(tarefas.filter(t => t.id !== editTask.id));
+                                    setEditTask(null);
+                                }}>Excluir</button>
+                                <div style={{ display: 'flex', gap: 12 }}>
+                                    <button type="button" className="btn btn-outline" onClick={() => setEditTask(null)}>Cancelar</button>
+                                    <button type="submit" className="btn btn-primary">Salvar Alterações</button>
+                                </div>
                             </div>
                         </form>
                     </div>

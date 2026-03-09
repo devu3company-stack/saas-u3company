@@ -12,13 +12,13 @@ import Surveys from './pages/Surveys';
 import Settings from './pages/Settings';
 import Traffic from './pages/Traffic';
 import Academy from './pages/Academy';
-import WhatsAppSetup from './pages/WhatsAppSetup';
 import Inbox from './pages/Inbox';
 import FlowEditor from './pages/FlowEditor';
 import Templates from './pages/Templates';
 import Financeiro from './pages/Financeiro';
 import Tarefas from './pages/Tarefas';
 import WhiteLabel from './pages/WhiteLabel';
+import Prospecting from './pages/Prospecting';
 
 function App() {
   return (
@@ -33,6 +33,7 @@ function App() {
             <Route path="clientes" element={<Clients />} />
             <Route path="clientes/:id" element={<ClientDetail />} />
             <Route path="leads" element={<Leads />} />
+            <Route path="prospeccao" element={<Prospecting />} />
             <Route path="tarefas" element={<Tarefas />} />
             <Route path="reunioes" element={<Meetings />} />
             <Route path="financeiro" element={<Financeiro />} />
@@ -40,8 +41,8 @@ function App() {
             <Route path="academy" element={<Academy />} />
             <Route path="metas" element={<Goals />} />
             <Route path="pesquisas" element={<Surveys />} />
+            <Route path="docs" element={<Settings />} /> {/* Simulated page for docs */}
             <Route path="configuracoes" element={<Settings />} />
-            <Route path="whatsapp-setup" element={<WhatsAppSetup />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="fluxos" element={<FlowEditor />} />
             <Route path="templates" element={<Templates />} />

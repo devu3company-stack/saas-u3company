@@ -33,7 +33,7 @@ const Settings = () => {
             </div>
 
             {activeTab === 'Geral' && (
-                <div className="grid-cards" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <div className="grid-cards">
                     <div className="card">
                         <h3 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
                             <User size={20} color="var(--accent-color)" /> Perfil da Empresa
@@ -116,10 +116,35 @@ const Settings = () => {
                                 Integre esta URL com Make, Zapier ou RD Station para entrada automática.
                             </p>
                         </div>
+
+                        <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid var(--border-color)' }}>
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>Integração Flowbuilder Externo (Typebot/n8n)</h4>
+
+                            <div className="form-group">
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>URL do seu Flowbuilder (para onde mandar as mensagens)</label>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <input type="text" className="form-control" placeholder="https://bot.suaagencia.com/api/v1/receive..." />
+                                </div>
+                                <p style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    Se configurado, nós **não** vamos responder usando a IA Nativa do CRM, vamos encaminhar todos os Webhooks que a Evolution receber direto para esta URL do seu robô externo.
+                                </p>
+                            </div>
+
+                            <div className="form-group" style={{ marginTop: 16 }}>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Webhook de Retorno (Typebot ➔ CRM Humano)</label>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <input type="text" className="form-control" readOnly value="https://api.u3company.com/v1/flow/handover" />
+                                    <button className="btn btn-outline" style={{ padding: '0 16px' }}><LinkIcon size={16} /></button>
+                                </div>
+                                <p style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--success)' }}>
+                                    No seu Flowbuilder, quando quiser passar para humano, faça um POST para esta URL enviando o `telefone`. Ele irá pausar o seu bot e jogar o cliente para a nossa tela de **Inbox (Chat)**.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
-        </div>
+        </div >
     );
 };
 

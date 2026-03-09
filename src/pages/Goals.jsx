@@ -1,8 +1,29 @@
 import { Target, TrendingUp, Calendar as CalIcon, Award, UserCheck, AlertTriangle, CheckCircle, Zap } from 'lucide-react';
+import { useState } from 'react';
 
 const Goals = () => {
     const today = new Date();
     const currentMonth = today.toLocaleString('pt-BR', { month: 'long' });
+    const [modalOpen, setModalOpen] = useState(false);
+    const [goalsConfig, setGoalsConfig] = useState(() => {
+        const saved = localStorage.getItem('u3_goals');
+        if (saved) return JSON.parse(saved);
+        return {
+            goal: 50000,
+            ticket: 2500,
+            metaStart: 10000,
+            metaPro: 30000,
+            metaDiamond: 50000,
+            hallName: 'Carlos Eduardo',
+            hallDesc: 'Maior taxa de fechamento da semana e +3 novos clientes retidos.',
+            hallPhoto: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop'
+        };
+    });
+
+    const updateGoals = (newGoals) => {
+        setGoalsConfig(newGoals);
+        localStorage.setItem('u3_goals', JSON.stringify(newGoals));
+    };
 
     // Simulação do Algoritmo de Dias Úteis
     const totalWorkingDays = 22; // Dias úteis no mês
@@ -10,7 +31,7 @@ const Goals = () => {
     const remainingDays = totalWorkingDays - passedWorkingDays;
 
     // Meta de Receita Mensal
-    const mrrGoal = 50000;
+    const mrrGoal = goalsConfig.goal;
     const currentMrr = 21000;
 
     const pacing = currentMrr / passedWorkingDays; // Quanto vendeu por dia
@@ -21,7 +42,7 @@ const Goals = () => {
     const isMrrHealthy = currentMrr >= (mrrGoal / totalWorkingDays) * passedWorkingDays;
 
     // Funil SDR (Game: 2 Agendamentos para dar 1 Reunião. Taxa de conv = 20%)
-    const mrrAvarageTicket = 2500;
+    const mrrAvarageTicket = goalsConfig.ticket;
     const salesNeeded = Math.ceil((mrrGoal - currentMrr) / mrrAvarageTicket);
     const meetingsNeeded = salesNeeded * 3; // (Assumindo 30% fechamento)
     const schedulesNeeded = meetingsNeeded * 2; // (Assumindo 50% de comparecimento show-up)
@@ -36,7 +57,7 @@ const Goals = () => {
                     <h2>Calendário de Metas ({currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)})</h2>
                     <p className="text-muted">Acompanhamento diário para bater {remainingDays} dias úteis restantes</p>
                 </div>
-                <button className="btn btn-primary" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button className="btn btn-primary" onClick={() => setModalOpen(true)} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Target size={16} /> Configurar Metas
                 </button>
             </div>
@@ -67,6 +88,34 @@ const Goals = () => {
                             <span style={{ fontWeight: 600 }}>R$ {Math.ceil(requiredPacing).toLocaleString('pt-BR')} / dia útil</span>
                             <Zap size={16} color="var(--accent-color)" />
                         </div>
+                    </div>
+                </div>
+
+                {/* 3 Metas (Start, Pro, Diamond) */}
+                <div className="card">
+                    <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)' }}>
+                        <Target size={18} /> Metas (Start, Pro, Diamond)
+                    </h3>
+
+                    <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {[
+                            { label: 'Meta Start', value: goalsConfig.metaStart, color: '#4FC3F7' },
+                            { label: 'Meta Pro', value: goalsConfig.metaPro, color: 'var(--accent-color)' },
+                            { label: 'Meta Diamond', value: goalsConfig.metaDiamond, color: '#B39DDB' }
+                        ].map((m, idx) => {
+                            const progress = Math.min((currentMrr / m.value) * 100, 100);
+                            return (
+                                <div key={idx}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: 6 }}>
+                                        <span style={{ fontWeight: 600, color: m.color }}>{m.label}</span>
+                                        <span style={{ color: 'var(--text-muted)' }}>R$ {currentMrr.toLocaleString('pt-BR')} / R$ {m.value.toLocaleString('pt-BR')}</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: 8, backgroundColor: 'var(--bg-tertiary)', borderRadius: 4, overflow: 'hidden' }}>
+                                        <div style={{ width: `${progress}%`, height: '100%', backgroundColor: m.color, transition: 'width 0.5s ease' }}></div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -116,7 +165,7 @@ const Goals = () => {
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ position: 'relative', display: 'inline-block' }}>
                             <img
-                                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop"
+                                src={goalsConfig.hallPhoto}
                                 alt="Employee"
                                 style={{ width: 80, height: 80, borderRadius: '50%', border: '3px solid var(--accent-color)', objectFit: 'cover' }}
                             />
@@ -124,15 +173,78 @@ const Goals = () => {
                                 <Award size={16} color="black" />
                             </div>
                         </div>
-                        <h4 style={{ margin: '16px 0 4px', fontSize: '1.1rem' }}>Carlos Eduardo</h4>
+                        <h4 style={{ margin: '16px 0 4px', fontSize: '1.1rem' }}>{goalsConfig.hallName}</h4>
                         <div style={{ fontSize: '0.85rem', color: 'var(--success)', fontWeight: 600 }}>Top Closer 🔥</div>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
-                            Maior taxa de fechamento da semana e +3 novos clientes retidos.
+                            {goalsConfig.hallDesc}
                         </p>
                     </div>
                 </div>
 
             </div>
+
+            {modalOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div className="card" style={{ width: 600, maxHeight: '90vh', overflowY: 'auto' }}>
+                        <h3 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}><Target size={20} color="var(--accent-color)" /> Configurar Metas</h3>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            updateGoals({
+                                goal: Number(e.target.goal.value),
+                                ticket: Number(e.target.ticket.value),
+                                metaStart: Number(e.target.metaStart.value),
+                                metaPro: Number(e.target.metaPro.value),
+                                metaDiamond: Number(e.target.metaDiamond.value),
+                                hallName: e.target.hallName.value,
+                                hallDesc: e.target.hallDesc.value,
+                                hallPhoto: e.target.hallPhoto.value,
+                            });
+                            setModalOpen(false);
+                        }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                <div className="form-group">
+                                    <label className="form-label">Meta de MRR Mensal (R$)</label>
+                                    <input name="goal" type="number" className="form-control" defaultValue={goalsConfig.goal} required />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Ticket Médio (R$)</label>
+                                    <input name="ticket" type="number" className="form-control" defaultValue={goalsConfig.ticket} required />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Meta Start (R$)</label>
+                                    <input name="metaStart" type="number" className="form-control" defaultValue={goalsConfig.metaStart} required />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Meta Pro (R$)</label>
+                                    <input name="metaPro" type="number" className="form-control" defaultValue={goalsConfig.metaPro} required />
+                                </div>
+                                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                                    <label className="form-label">Meta Diamond (R$)</label>
+                                    <input name="metaDiamond" type="number" className="form-control" defaultValue={goalsConfig.metaDiamond} required />
+                                </div>
+
+                                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                                    <label className="form-label">Nome (Hall da Fama)</label>
+                                    <input name="hallName" className="form-control" defaultValue={goalsConfig.hallName} required />
+                                </div>
+                                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                                    <label className="form-label">Foto URL (Hall da Fama)</label>
+                                    <input name="hallPhoto" className="form-control" defaultValue={goalsConfig.hallPhoto} required />
+                                </div>
+                                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                                    <label className="form-label">Descrição (Hall da Fama)</label>
+                                    <textarea name="hallDesc" className="form-control" defaultValue={goalsConfig.hallDesc} rows={2} required></textarea>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary">Salvar Metas</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

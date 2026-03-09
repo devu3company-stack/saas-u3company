@@ -30,14 +30,16 @@ const DashboardLayout = () => {
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { path: '/clientes', label: 'Clientes', icon: <Users size={20} /> },
-    { path: '/leads', label: 'Leads', icon: <Target size={20} /> },
-    { path: '/tarefas', label: 'Tarefas / Equipe', icon: <ListTodo size={20} /> },
+    { path: '/leads', label: 'CRM & Funil', icon: <Target size={20} /> },
+    { path: '/prospeccao', label: 'Prospecção (API)', icon: <Search size={20} /> },
+    { path: '/tarefas', label: 'Tarefas da Equipe', icon: <ListTodo size={20} /> },
     { path: '/reunioes', label: 'Agenda de Reuniões', icon: <Calendar size={20} /> },
     { path: '/financeiro', label: 'Financeiro', icon: <DollarSign size={20} /> },
-    { path: '/trafego', label: 'Dashboard Tráfego', icon: <LineChart size={20} /> },
-    { path: '/academy', label: 'Portal do Cliente', icon: <BookOpen size={20} /> },
+    { path: '/trafego', label: 'Mídia & Performance', icon: <LineChart size={20} /> },
+    { path: '/academy', label: 'Trilha de Onboarding', icon: <BookOpen size={20} /> },
     { path: '/metas', label: 'Calendário de Metas', icon: <TrendingUp size={20} /> },
     { path: '/pesquisas', label: 'Pesquisas (NPS)', icon: <BarChart2 size={20} /> },
+    { path: '/docs', label: 'Docs & Senhas', icon: <FileText size={20} /> },
     { path: '/whitelabel', label: 'White-Label (SaaS)', icon: <Layers size={20} /> },
     { path: '/configuracoes', label: 'Configurações', icon: <Settings size={20} /> },
   ];
@@ -83,7 +85,6 @@ const DashboardLayout = () => {
               </div>
               {getAllowedMenuItems([
                 { path: '/inbox', label: 'Inbox (Chat)', icon: <Inbox size={20} /> },
-                { path: '/whatsapp-setup', label: 'Conectar WhatsApp', icon: <MessageCircle size={20} /> },
                 { path: '/fluxos', label: 'Editor de Fluxos', icon: <GitBranch size={20} /> },
                 { path: '/templates', label: 'Templates', icon: <FileCheck size={20} /> },
               ]).map(item => (

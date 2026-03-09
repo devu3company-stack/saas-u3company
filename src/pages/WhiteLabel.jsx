@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Layers, Plus, Copy, Palette, Globe, CheckCircle, Search, LayoutTemplate, MoreVertical } from 'lucide-react';
+import { Layers, Plus, Copy, Palette, Globe, CheckCircle, Search, LayoutTemplate, MoreVertical, Shield } from 'lucide-react';
 
 const WhiteLabel = () => {
     const [modalOpen, setModalOpen] = useState(false);
+    const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
     // Dados Mockados das Agências (Tenants) do SaaS
     const [agencies, setAgencies] = useState([
@@ -35,7 +36,7 @@ const WhiteLabel = () => {
                     <p className="text-muted">Controle as licenças, duplique o painel e personalize cores para outras agências.</p>
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginLeft: 'auto' }}>
-                    <button className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button className="btn btn-outline" onClick={() => setTemplateModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <LayoutTemplate size={16} /> Mapeamento de Templates
                     </button>
                     <button className="btn btn-primary" onClick={() => setModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -128,7 +129,7 @@ const WhiteLabel = () => {
 
                         <form onSubmit={handleCreateInstance}>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="responsive-grid-2">
                                 <div className="form-group">
                                     <label className="form-label">Nome da Agência / Empresa</label>
                                     <input name="agencyName" type="text" className="form-control" required placeholder="Ex: Agência Connect" autoFocus />
@@ -152,10 +153,21 @@ const WhiteLabel = () => {
                                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Aponte o CNAME do domínio acima para <strong>cname.vercel-dns.com</strong>.</p>
                             </div>
 
+                            <div className="responsive-grid-2" style={{ marginTop: 16, borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ display: 'flex', gap: 6, alignItems: 'center' }}><Shield size={14} /> Credencial Admin (E-mail)</label>
+                                    <input name="adminEmail" type="email" className="form-control" required placeholder="admin@agencia.com" />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label" style={{ display: 'flex', gap: 6, alignItems: 'center' }}><Shield size={14} /> Senha do Admin</label>
+                                    <input name="adminPassword" type="password" className="form-control" required placeholder="********" />
+                                </div>
+                            </div>
+
                             <div style={{ marginTop: 24, backgroundColor: 'var(--bg-main)', padding: 16, borderRadius: 8, border: '1px dashed var(--border-color)' }}>
                                 <h4 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: '0.9rem' }}><Palette size={16} /> Personalização Visual (White-Label)</h4>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                <div className="responsive-grid-2">
                                     <div className="form-group">
                                         <label className="form-label">Cor Primária (Accent Color)</label>
                                         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -178,6 +190,29 @@ const WhiteLabel = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {templateModalOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+                    <div className="card" style={{ width: 500 }}>
+                        <h3 style={{ marginBottom: 24, display: 'flex', gap: 8, alignItems: 'center' }}><LayoutTemplate size={20} color="var(--accent-color)" /> Mapeamento de Templates e Módulos</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 20 }}>
+                            Determine quais módulos padrão serão ativados nas novas licenças White-Label.
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {['CRM & Funil', 'Gestor de Tarefas', 'Mídia & Performance (Upload Meta)', 'Fluxos e IA', 'Relatórios Financeiros'].map((t, idx) => (
+                                <div key={idx} style={{ padding: 12, border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--bg-main)' }}>
+                                    <span style={{ fontWeight: 500 }}>{t}</span>
+                                    <input type="checkbox" defaultChecked style={{ accentColor: 'var(--accent-color)', width: 18, height: 18 }} />
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+                            <button type="button" className="btn btn-outline" onClick={() => setTemplateModalOpen(false)}>Fechar</button>
+                            <button type="button" className="btn btn-primary" onClick={() => setTemplateModalOpen(false)}>Atualizar Templates</button>
+                        </div>
                     </div>
                 </div>
             )}
