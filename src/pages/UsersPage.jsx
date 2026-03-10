@@ -113,7 +113,15 @@ const UsersPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {usersList.map(member => {
+                            {usersList.filter(u => {
+                                // Se for Admin do Cliente (Tenant), só vê a si mesmo ou quem seu tenant criou
+                                if (currentUser.role === 'cliente_admin' || currentUser.tenantId) {
+                                    const myTenantId = currentUser.tenantId || currentUser.id;
+                                    return u.id === myTenantId || u.tenantId === myTenantId;
+                                }
+                                // Se for Matriz (CEO, etc), não vê os usuários das agências compradoras na "Equipe" principal
+                                return !u.tenantId && u.role !== 'cliente_admin';
+                            }).map(member => {
                                 const perms = getUserPermissions(member);
                                 return (
                                     <tr key={member.id}>

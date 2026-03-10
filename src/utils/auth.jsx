@@ -52,10 +52,17 @@ export const AuthProvider = ({ children }) => {
     });
 
     const getStorageKey = (key) => {
-        if (!user) return key; // sem sessão: chave limpa
-        if (user.id === 1) return `demo_${key}`; // usuário demo isolado
-        if (user.id === 2) return key; // CEO dono - chave original (compatibilidade)
-        return `u3_${user.id}_${key}`; // todos os outros usuários: namespace próprio
+        if (!user) return key;
+        if (user.id === 1) return `demo_${key}`; // Demo isolado
+
+        // Novo cliente (Tenant) ou funcionário de um tenant é 100% isolado da matriz
+        if (user.role === 'cliente_admin' || user.tenantId) {
+            const tenantId = user.tenantId || user.id;
+            return `tenant_${tenantId}_${key}`;
+        }
+
+        // Agência Matriz (CEO, Gestor, SDR, Designer originais): compartilham o DB original e enxergam TODOS os dados já salvos
+        return key;
     };
 
     useEffect(() => {
@@ -109,7 +116,12 @@ export const AuthProvider = ({ children }) => {
 
     const createUser = (newUser) => {
         const id = Date.now();
-        const updatedUsers = [...usersList, { ...newUser, id }];
+        // Se quem está criando é um tenant (cliente_admin) ou seu funcionário, o novo usuário herda a ilha do tenant
+        const tenantId = user && (user.role === 'cliente_admin' || user.tenantId)
+            ? (user.tenantId || user.id)
+            : null;
+
+        const updatedUsers = [...usersList, { ...newUser, id, tenantId }];
         setUsersList(updatedUsers);
         localStorage.setItem('u3_users_db', JSON.stringify(updatedUsers));
         return { success: true };
