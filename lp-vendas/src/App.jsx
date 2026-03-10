@@ -1,29 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { CheckCircle, BarChart2, MessageCircle, GitBranch, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import './index.css';
 
 const App = () => {
 
-  const KIWIFY_LINK = "https://pay.kiwify.com.br/AkbuJgK";
-  const [checkoutUrl, setCheckoutUrl] = useState(KIWIFY_LINK);
-
   useEffect(() => {
     document.title = "U3 SaaS - Acelere suas Vendas";
-
-    // Captura e mantem UTMs de rastreio (estilo UTMfy)
-    const urlParams = new URLSearchParams(window.location.search);
-
-    // Se veio parâmetros novos na URL, salva (para o usuário não perder a origem se der reload na página)
-    if (Array.from(urlParams.keys()).length > 0) {
-      localStorage.setItem('u3_utm_params', urlParams.toString());
-    }
-
-    // Monta a URL de destino com os parâmetros capturados
-    const storedParams = localStorage.getItem('u3_utm_params');
-    if (storedParams) {
-      setCheckoutUrl(`${KIWIFY_LINK}?${storedParams}`);
-    }
   }, []);
+
+  const KIWIFY_LINK = "https://pay.kiwify.com.br/AkbuJgK";
 
   return (
     <div style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
@@ -34,7 +19,7 @@ const App = () => {
         </div>
         <div>
           <a href="https://saas-u3company.vercel.app/login" className="btn btn-outline" style={{ marginRight: 16, textDecoration: 'none' }}>Fazer Login</a>
-          <button className="btn btn-primary" onClick={() => window.open(checkoutUrl, '_blank')}>
+          <button className="btn btn-primary" onClick={() => window.open(KIWIFY_LINK, '_blank')}>
             Assinar Agora
           </button>
         </div>
@@ -49,7 +34,7 @@ const App = () => {
           Gestão de CRM, Automação de WhatsApp (Fluxos), Análise de Tráfego e Gestão Financeira. O ecossistema completo que sua empresa precisa por uma única assinatura acessível.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 60 }}>
-          <button className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 0 20px rgba(0, 229, 255, 0.4)' }} onClick={() => window.open(checkoutUrl, '_blank')}>
+          <button className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 0 20px rgba(0, 229, 255, 0.4)' }} onClick={() => window.open(KIWIFY_LINK, '_blank')}>
             Começar hoje por R$ 47,90/mês <ArrowRight size={24} />
           </button>
         </div>
@@ -128,7 +113,7 @@ const App = () => {
             <li style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '1.1rem' }}><CheckCircle size={22} color="var(--success)" /> Atualizações Gratuitas</li>
           </ul>
 
-          <button className="btn btn-primary" style={{ width: '100%', padding: '18px', fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }} onClick={() => window.open(checkoutUrl, '_blank')}>
+          <button className="btn btn-primary" style={{ width: '100%', padding: '18px', fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }} onClick={() => window.open(KIWIFY_LINK, '_blank')}>
             <ShieldCheck size={24} /> Assinar e Começar
           </button>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 20 }}>Pagamento 100% seguro via Kiwify.</p>
