@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut, Menu, X, DollarSign, ListTodo, Layers, CheckCircle, Radar } from 'lucide-react';
+import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut, Menu, X, DollarSign, ListTodo, Layers, CheckCircle, Radar, Shield } from 'lucide-react';
 import { useAuth } from '../utils/auth';
 
 const DashboardLayout = () => {
@@ -42,6 +42,7 @@ const DashboardLayout = () => {
     { path: '/pesquisas', label: 'Pesquisas (NPS)', icon: <BarChart2 size={20} /> },
     { path: '/docs', label: 'Docs & Senhas', icon: <FileText size={20} /> },
     { path: '/whitelabel', label: 'White-Label (SaaS)', icon: <Layers size={20} /> },
+    { path: '/equipe', label: 'Gerenciar Equipe', icon: <Shield size={20} /> },
     { path: '/configuracoes', label: 'Configurações', icon: <Settings size={20} /> },
   ];
 

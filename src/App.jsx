@@ -22,6 +22,7 @@ import Tarefas from './pages/Tarefas';
 import WhiteLabel from './pages/WhiteLabel';
 import Prospecting from './pages/Prospecting';
 import MetaTracking from './pages/MetaTracking';
+import UsersPage from './pages/UsersPage';
 
 function App() {
   useEffect(() => {
@@ -64,6 +65,7 @@ function App() {
             <Route path="fluxos" element={<FlowEditor />} />
             <Route path="templates" element={<Templates />} />
             <Route path="whitelabel" element={<WhiteLabel />} />
+            <Route path="/equipe" element={<UsersPage />} />
           </Route>
         </Routes>
       </Router>
