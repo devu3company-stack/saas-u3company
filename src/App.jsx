@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
 import { AuthProvider } from './utils/auth';
+import { initMetaPixel } from './utils/metaPixel';
 import DashboardLayout from './layouts/DashboardLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -21,6 +23,10 @@ import WhiteLabel from './pages/WhiteLabel';
 import Prospecting from './pages/Prospecting';
 
 function App() {
+  useEffect(() => {
+    initMetaPixel(); // Dispara PageView init
+  }, []);
+
   return (
     <AuthProvider>
       <Router>

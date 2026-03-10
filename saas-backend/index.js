@@ -101,6 +101,53 @@ app.post('/api/whatsapp/send-message', async (req, res) => {
     }
 });
 
+//==========================================================
+// ROTAS PARA API DE CONVERSÕES DO META (CAPI)
+//==========================================================
+app.post('/api/meta/capi', async (req, res) => {
+    try {
+        const { eventName, eventData, eventId, sourceUrl, userAgent, fbp, fbc } = req.body;
+
+        const META_PIXEL_ID = process.env.VITE_META_PIXEL_ID;
+        const META_API_TOKEN = process.env.META_API_TOKEN;
+
+        if (!META_PIXEL_ID || !META_API_TOKEN) {
+            return res.status(500).json({ error: 'Configurações de Meta CAPI incompletas. Verifique o .env.' });
+        }
+
+        const payloadInfo = {
+            data: [
+                {
+                    event_name: eventName,
+                    event_time: Math.floor(Date.now() / 1000),
+                    action_source: "website",
+                    event_id: eventId,
+                    event_source_url: sourceUrl,
+                    user_data: {
+                        client_ip_address: req.ip || req.connection.remoteAddress,
+                        client_user_agent: userAgent,
+                        fbp,
+                        fbc,
+                        // Aqui você também pode adicionar emd (email), ph (phone), caso você tenha coletado do CRM
+                        // convertidos em hash SHA-256
+                    },
+                    custom_data: eventData || {}
+                }
+            ]
+        };
+
+        const response = await axios.post(`https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events`, payloadInfo, {
+            params: { access_token: META_API_TOKEN }
+        });
+
+        console.log(`[CAPI Evento] Enviado com sucesso: ${eventName} (${eventId})`);
+        res.status(200).json({ success: true, data: response.data });
+    } catch (error) {
+        console.error("❌ Erro na API de Conversões do Meta (CAPI):", error?.response?.data || error.message);
+        res.status(500).json({ success: false, error: 'Falha no envio do Evento.' });
+    }
+});
+
 const PORT = 3001;
 server.listen(PORT, () => {
     console.log(`🚀 Saas Bridge CRM rodando na porta ${PORT}`);
