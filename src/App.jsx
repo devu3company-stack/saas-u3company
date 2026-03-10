@@ -27,15 +27,6 @@ import UsersPage from './pages/UsersPage';
 function App() {
   useEffect(() => {
     initMetaPixel(); // Dispara PageView init
-
-    // Captura tags UTM da URL no momento em que a pessoa cai em qualquer tela do SaaS
-    const urlParams = new URLSearchParams(window.location.search);
-    if (Array.from(urlParams.keys()).length > 0) {
-      const stored = localStorage.getItem('u3_utm_params');
-      if (!stored) { // Só grava a primeira origem
-        localStorage.setItem('u3_utm_params', urlParams.toString());
-      }
-    }
   }, []);
 
   return (

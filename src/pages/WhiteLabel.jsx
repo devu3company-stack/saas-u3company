@@ -1,35 +1,90 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layers, Plus, Copy, Palette, Globe, CheckCircle, Search, LayoutTemplate, MoreVertical, Shield } from 'lucide-react';
+import { useAuth } from '../utils/auth';
 
 const WhiteLabel = () => {
+    const { getData, setData, createUser } = useAuth();
     const [modalOpen, setModalOpen] = useState(false);
     const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
-    // Dados Mockados das Agências (Tenants) do SaaS
-    const [agencies, setAgencies] = useState([
-        { id: 1, name: 'U3 Company (Matriz)', domain: 'app.u3company.com', color: '#fff600', status: 'ativo', clients: 45, plan: 'Lifetime' },
-        { id: 2, name: 'Marketing Pro', domain: 'crm.marketingpro.com.br', color: '#00D084', status: 'ativo', clients: 12, plan: 'Mensal - R$ 997' },
-        { id: 3, name: 'Lead Machine Agency', domain: 'painel.leadmachine.com', color: '#EB144C', status: 'deploying', clients: 0, plan: 'Mensal - R$ 997' }
-    ]);
+    const [toast, setToast] = useState(null);
+
+    const showToast = (msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 5000);
+    };
+
+    // Dados das Agências (Tenants) do SaaS usando storage isolado
+    const [agencies, setAgencies] = useState(() => {
+        const initialMock = [
+            { id: 1, name: 'U3 Company (Matriz)', domain: 'app.u3company.com', color: '#fff600', status: 'ativo', clients: 45, plan: 'Lifetime' },
+            { id: 2, name: 'Marketing Pro', domain: 'crm.marketingpro.com.br', color: '#00D084', status: 'ativo', clients: 12, plan: 'Mensal - R$ 997' },
+            { id: 3, name: 'Lead Machine Agency', domain: 'painel.leadmachine.com', color: '#EB144C', status: 'deploying', clients: 0, plan: 'Mensal - R$ 997' }
+        ];
+        return getData('u3_agencies', JSON.stringify(initialMock));
+    });
+
+    useEffect(() => {
+        setData('u3_agencies', agencies);
+    }, [agencies, setData]);
+
+    useEffect(() => {
+        // Simulador de Deploy: Após 5 segundos, qualquer agência "deploying" vira "ativo"
+        const deployTimers = agencies.filter(a => a.status === 'deploying').map(agency => {
+            return setTimeout(() => {
+                setAgencies(prev => prev.map(p => p.id === agency.id ? { ...p, status: 'ativo' } : p));
+                showToast(`✅ Servidor de ${agency.name} concluído e já está online!`);
+            }, 4000);
+        });
+
+        return () => deployTimers.forEach(clearTimeout);
+    }, [agencies]);
 
     const handleCreateInstance = (e) => {
         e.preventDefault();
         const form = e.target;
+        const agencyName = form.agencyName.value;
+        const adminEmail = form.adminEmail.value;
+        const adminPassword = form.adminPassword.value;
+
+        // Cria o usuário com o role de admin de cliente (com todas perms menos whitelabel)
+        createUser({
+            email: adminEmail,
+            password: adminPassword,
+            name: `Admin - ${agencyName}`,
+            role: 'cliente_admin',
+            customPermissions: null
+        });
+
         const newAgency = {
             id: Date.now(),
-            name: form.agencyName.value,
+            name: agencyName,
             domain: form.domain.value,
             color: form.color.value,
             status: 'deploying',
             clients: 0,
             plan: form.plan.value,
         };
-        setAgencies([...agencies, newAgency]);
+        const updatedAgencies = [newAgency, ...agencies];
+        setAgencies(updatedAgencies);
+        setData('u3_agencies', updatedAgencies);
         setModalOpen(false);
+
+        showToast(`🚀 Instância para ${agencyName} criada! Iniciando deploy no provedor... Seu cliente já pode logar com ${adminEmail}.`);
     };
 
     return (
         <div>
+            {toast && (
+                <div style={{
+                    position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+                    padding: '16px 24px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--accent-color)',
+                    borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', fontSize: '0.95rem',
+                    display: 'flex', alignItems: 'center', gap: 12, animation: 'fadeIn 0.3s ease'
+                }}>
+                    <CheckCircle size={20} color="var(--success)" /> {toast}
+                </div>
+            )}
             <div className="page-header" style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                 <div>
                     <h2><Layers size={24} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8, color: 'var(--accent-color)' }} /> Gerenciador de Instâncias (SaaS Web)</h2>

@@ -6,8 +6,8 @@ import { useAuth } from '../utils/auth';
 const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, getAllowedMenuItems } = useAuth();
-  const [logo, setLogo] = useState(() => localStorage.getItem('u3_logo') || '');
+  const { user, logout, getAllowedMenuItems, getData, setData } = useAuth();
+  const [logo, setLogo] = useState(() => getData('u3_logo', ''));
   const fileInputRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -21,7 +21,7 @@ const DashboardLayout = () => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target.result;
-      localStorage.setItem('u3_logo', dataUrl);
+      setData('u3_logo', dataUrl);
       setLogo(dataUrl);
     };
     reader.readAsDataURL(file);
