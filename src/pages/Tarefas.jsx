@@ -278,17 +278,17 @@ const Tarefas = () => {
                                         {/* Ações Rápidas Kano */}
                                         <div style={{ display: 'flex', gap: 6 }}>
                                             {tarefa.status === 'pendente' && (
-                                                <button onClick={() => updateStatus(tarefa.id, 'em_andamento')} title="Iniciar" style={{ background: 'transparent', border: 'none', color: 'var(--warning)', cursor: 'pointer' }}>
+                                                <button onClick={(e) => { e.stopPropagation(); updateStatus(tarefa.id, 'em_andamento'); }} title="Iniciar" style={{ background: 'transparent', border: 'none', color: 'var(--warning)', cursor: 'pointer' }}>
                                                     <PlayCircle size={20} />
                                                 </button>
                                             )}
                                             {tarefa.status === 'em_andamento' && (
-                                                <button onClick={() => updateStatus(tarefa.id, 'pendente')} title="Pausar" style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>
+                                                <button onClick={(e) => { e.stopPropagation(); updateStatus(tarefa.id, 'pendente'); }} title="Pausar" style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>
                                                     <StopCircle size={20} />
                                                 </button>
                                             )}
                                             {tarefa.status !== 'concluida' && (
-                                                <button onClick={() => updateStatus(tarefa.id, 'concluida')} title="Concluir" style={{ background: 'transparent', border: 'none', color: 'var(--success)', cursor: 'pointer' }}>
+                                                <button onClick={(e) => { e.stopPropagation(); updateStatus(tarefa.id, 'concluida'); }} title="Concluir" style={{ background: 'transparent', border: 'none', color: 'var(--success)', cursor: 'pointer' }}>
                                                     <CheckCircle size={20} />
                                                 </button>
                                             )}
@@ -453,7 +453,7 @@ const Tarefas = () => {
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label className="form-label">Atribuir para:</label>
                                     <select name="responsavel" className="form-control" required>
-                                        {usersList.filter(u => u.role !== 'cliente').map(u => (
+                                        {(usersList || []).filter(u => u.role !== 'cliente').map(u => (
                                             <option key={u.id} value={u.name}>{u.name} ({u.role.toUpperCase()})</option>
                                         ))}
                                     </select>
@@ -484,8 +484,8 @@ const Tarefas = () => {
 
             {/* Modal Editar Tarefa */}
             {editTask && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, overflowY: 'auto' }}>
-                    <div className="card" style={{ width: 500, margin: 'auto' }}>
+                <div onClick={() => setEditTask(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, overflowY: 'auto', padding: 20 }}>
+                    <div className="card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 500 }}>
                         <h3 style={{ marginBottom: 24 }}>Editar Tarefa</h3>
                         <form onSubmit={handleSaveEdit}>
                             <div className="form-group">
@@ -525,7 +525,7 @@ const Tarefas = () => {
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label className="form-label">Responsável</label>
                                     <select name="responsavel" className="form-control" defaultValue={editTask.responsavel} required>
-                                        {usersList.filter(u => u.role !== 'cliente').map(u => (
+                                        {(usersList || []).filter(u => u.role !== 'cliente').map(u => (
                                             <option key={u.id} value={u.name}>{u.name} ({u.role.toUpperCase()})</option>
                                         ))}
                                     </select>
