@@ -77,28 +77,7 @@ const DashboardLayout = () => {
             </Link>
           ))}
 
-          {user?.role !== 'cliente' && (
-            <>
-              {/* Separador WhatsApp */}
-              <div style={{ padding: '12px 24px 4px', marginTop: 8 }}>
-                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', fontWeight: 600 }}>WhatsApp & IA</span>
-              </div>
-              {getAllowedMenuItems([
-                { path: '/inbox', label: 'Inbox (Chat)', icon: <Inbox size={20} /> },
-                { path: '/fluxos', label: 'Editor de Fluxos', icon: <GitBranch size={20} /> },
-                { path: '/templates', label: 'Templates', icon: <FileCheck size={20} /> },
-              ]).map(item => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`nav-item ${location.pathname.startsWith(item.path) ? 'active' : ''}`}
-                >
-                  {item.icon}
-                  {item.label}
-                </Link>
-              ))}
-            </>
-          )}
+
         </nav>
       </aside>
 
