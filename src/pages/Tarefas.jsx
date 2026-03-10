@@ -14,9 +14,11 @@ const Tarefas = () => {
         return getData('u3_tarefas', JSON.stringify(initialMock));
     });
 
-    useEffect(() => {
-        setData('u3_tarefas', tarefas);
-    }, [tarefas, setData]);
+    // PERSISTÊNCIA MANUAL
+    const saveTarefas = (newList) => {
+        setTarefas(newList);
+        setData('u3_tarefas', newList);
+    };
 
     const [clientes, setClientes] = useState(['Nenhum / Interno']);
 
@@ -34,17 +36,19 @@ const Tarefas = () => {
     const [viewMode, setViewMode] = useState('kanban'); // 'list' ou 'kanban'
 
     // Timer para atualizar o tempo na tela se estiver em andamento
+    // Timer Visual - Apenas para a UI, sem salvar no DB a cada segundo
+    const [currentTime, setCurrentTime] = useState(Date.now());
     useEffect(() => {
-        const interval = setInterval(() => {
-            setTarefas(current => current.map(t => {
-                if (t.status === 'em_andamento' && t.iniciadaEm) {
-                    return { ...t, tempoExecucao: Math.floor((Date.now() - t.iniciadaEm) / 1000) };
-                }
-                return t;
-            }));
-        }, 1000);
+        const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
         return () => clearInterval(interval);
     }, []);
+
+    const getDynamicTime = (tarefa) => {
+        if (tarefa.status === 'em_andamento' && tarefa.iniciadaEm) {
+            return Math.floor((currentTime - tarefa.iniciadaEm) / 1000);
+        }
+        return tarefa.tempoExecucao;
+    };
 
     const getPriorityColor = (prioridade) => {
         switch (prioridade) {
@@ -82,14 +86,15 @@ const Tarefas = () => {
             referencias: form.referencias?.value || '',
             anexos: []
         };
-        setTarefas([novaTarefa, ...tarefas]);
+        const newList = [novaTarefa, ...tarefas];
+        saveTarefas(newList);
         setModalOpen(false);
     };
 
     const handleSaveEdit = (e) => {
         e.preventDefault();
         const form = e.target;
-        setTarefas(tarefas.map(t => {
+        const newList = tarefas.map(t => {
             if (t.id === editTask.id) {
                 return {
                     ...t,
@@ -105,24 +110,28 @@ const Tarefas = () => {
                 };
             }
             return t;
-        }));
+        });
+        saveTarefas(newList);
         setEditTask(null);
     };
 
     const updateStatus = (id, newStatus) => {
-        setTarefas(tarefas.map(t => {
+        const newList = tarefas.map(t => {
             if (t.id === id) {
                 if (newStatus === 'em_andamento' && t.status !== 'em_andamento') {
                     const offset = t.tempoExecucao * 1000;
                     return { ...t, status: newStatus, iniciadaEm: Date.now() - offset };
                 }
                 if (t.status === 'em_andamento' && newStatus !== 'em_andamento') {
-                    return { ...t, status: newStatus, iniciadaEm: null };
+                    // Quando pausa ou conclui, o tempo dinâmico vira tempo fixo persistido
+                    const totalSecs = Math.floor((Date.now() - t.iniciadaEm) / 1000);
+                    return { ...t, status: newStatus, iniciadaEm: null, tempoExecucao: totalSecs };
                 }
                 return { ...t, status: newStatus };
             }
             return t;
-        }));
+        });
+        saveTarefas(newList);
     };
 
     // --- Lógica Drag & Drop ---
@@ -387,7 +396,7 @@ const Tarefas = () => {
                                                 fontWeight: tarefa.status === 'em_andamento' ? 700 : 500
                                             }}>
                                                 <Clock size={16} />
-                                                {formatTime(tarefa.tempoExecucao)}
+                                                {formatTime(getDynamicTime(tarefa))}
                                                 {tarefa.status === 'em_andamento' && <span style={{ fontSize: '0.7rem' }}>(Gravando...)</span>}
                                             </div>
                                         </td>
@@ -465,8 +474,9 @@ const Tarefas = () => {
                             <div className="responsive-flex">
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label className="form-label">Atribuir para:</label>
-                                    <select name="responsavel" className="form-control" required>
-                                        {(usersList || []).filter(u => u.role !== 'cliente').map(u => (
+                                    <select name="responsavel" className="form-control" required defaultValue={user?.name}>
+                                        <option value={user?.name}>{user?.name} (VOCÊ)</option>
+                                        {(usersList || []).filter(u => u.role !== 'cliente' && u.id !== user?.id).map(u => (
                                             <option key={u.id} value={u.name}>{u.name} ({u.role.toUpperCase()})</option>
                                         ))}
                                     </select>

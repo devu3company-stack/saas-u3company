@@ -99,6 +99,18 @@ export const AuthProvider = ({ children }) => {
     // getData e setData — agora salvam NO BACKEND (compartilhado)
     // mas também mantêm cache em localStorage para não ter delay
     // ============================================================
+    // Listagem de usuários filtrada para o contexto (visibilidade por tenant)
+    const filteredUsersList = usersList.filter(u => {
+        if (!user) return false;
+        if (user.id === 1) return u.id === 1; // Demo só vê a si mesmo
+        if (user.role === 'cliente_admin' || user.tenantId) {
+            const myTenantId = user.tenantId || user.id;
+            return u.id === myTenantId || u.tenantId === myTenantId;
+        }
+        // Matriz (CEO, etc) vê apenas usuários da matriz (sem tenantId)
+        return !u.tenantId && u.role !== 'cliente_admin';
+    });
+
     const getData = useCallback((key, fallback = null) => {
         const namespace = getNamespace();
         const localKey = `${namespace}__${key}`;
@@ -121,7 +133,14 @@ export const AuthProvider = ({ children }) => {
             })
             .catch(() => { });
 
-        // 3. Retorna o fallback enquanto aguarda
+        // 3. Retorna o fallback APENAS se for a Matriz (shared) ou Demo
+        // Para novos Tenants, retornamos vazio para garantir que o painel inicie limpo.
+        if (namespace !== 'shared' && namespace !== 'demo') {
+            if (typeof fallback === 'string' && fallback.startsWith('[')) return [];
+            if (typeof fallback === 'string' && fallback.startsWith('{')) return {};
+            return null;
+        }
+
         if (fallback === null) return null;
         if (typeof fallback === 'string') {
             try { return JSON.parse(fallback); } catch { return fallback; }
@@ -258,7 +277,7 @@ export const AuthProvider = ({ children }) => {
     return (
         <AuthContext.Provider value={{
             user, login, logout, hasPermission, getAllowedMenuItems,
-            usersList, createUser, updateUser, deleteUser, getUserPermissions,
+            usersList: filteredUsersList, createUser, updateUser, deleteUser, getUserPermissions,
             changePassword,
             PERMISSIONS: ROLE_PRESETS, ALL_ROUTES,
             getStorageKey, getData, setData, removeData, clearData

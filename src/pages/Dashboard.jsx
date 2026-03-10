@@ -23,7 +23,7 @@ const Dashboard = () => {
         setMrr(totalMrr);
 
         const savedLeads = getData('u3_leads', '[]') || [];
-        setLeadsCount(savedLeads.filter(l => l.status === 'Novo').length || 12);
+        setLeadsCount(savedLeads.filter(l => l.status === 'Novo' || l.status === 'Novo Lead').length);
 
         const savedTasks = getData('u3_tarefas', '[]') || [];
         const pendentes = savedTasks.filter(t => t.status === 'pendente' || t.status === 'em_andamento').length;
@@ -70,8 +70,8 @@ const Dashboard = () => {
                         <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mrr)}
                         </div>
-                        <div style={{ marginTop: 8, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--success)' }}>
-                            <ArrowUpRight size={14} /> +12% vs Mês Anterior
+                        <div style={{ marginTop: 8, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)' }}>
+                            Baseado em Clientes Ativos
                         </div>
                     </div>
                 )}
@@ -140,9 +140,8 @@ const Dashboard = () => {
                             <span className="badge" style={{ backgroundColor: 'var(--success)', color: 'black' }}>Zona de Qualidade</span>
                         </div>
                         <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--success)' }}>9.4</div>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Média das últimas entregas avaliadas</p>
-                            <Link to="/pesquisas" className="btn btn-outline" style={{ marginTop: 24, fontSize: '0.8rem' }}>Ver feedbacks</Link>
+                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>-</div>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Nenhum feedback coletado ainda</p>
                         </div>
                     </div>
                 ) : (
@@ -151,22 +150,10 @@ const Dashboard = () => {
                             <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <Calendar size={16} color="var(--text-muted)" /> Agenda de Hoje
                             </h3>
-                            <span className="badge" style={{ backgroundColor: 'var(--accent-color)', color: 'black' }}>3 reuniões</span>
+                            <Link to="/reunioes" className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Ver Agenda</Link>
                         </div>
-                        <div style={{ padding: 16 }}>
-                            {[
-                                { id: 1, time: '10:00', client: 'AlphaTech Solutions', type: 'Proposta' },
-                                { id: 2, time: '14:30', client: 'Construtora Silva', type: 'Alinhamento' },
-                                { id: 3, time: '16:00', client: 'Loja Nova', type: 'Diagnóstico (Lead)' }
-                            ].map(meet => (
-                                <div key={meet.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--border-color)', alignItems: 'center' }}>
-                                    <div>
-                                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{meet.time} - {meet.client}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>{meet.type}</div>
-                                    </div>
-                                    <button className="btn btn-outline" style={{ padding: '4px 12px', fontSize: '0.75rem' }}>Link Meet</button>
-                                </div>
-                            ))}
+                        <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                            Nenhuma reunião agendada para hoje
                         </div>
                     </div>
                 )}
@@ -174,27 +161,13 @@ const Dashboard = () => {
                 {/* Clientes em Risco / Alertas (Oculto para Designer) */}
                 {!isDesigner && (
                     <div className="card" style={{ padding: 0 }}>
-                        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ff333310' }}>
-                            <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--danger)' }}>
-                                <AlertTriangle size={16} /> Alertas Críticos (Churn Risk)
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <AlertTriangle size={16} color="var(--text-muted)" /> Alertas Críticos
                             </h3>
                         </div>
-                        <div style={{ padding: 16 }}>
-                            {[
-                                { id: 2, name: 'Imobiliária Prime', reason: 'NPS Baixo (Nota 5)', lastMeet: 'Há 25 dias' },
-                                { id: 5, name: 'Eco Produtos', reason: 'Engajamento zero no Whats', lastMeet: 'Há 32 dias' }
-                            ].map(client => (
-                                <div key={client.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--border-color)', alignItems: 'center' }}>
-                                    <div>
-                                        <Link to={`/clientes/${client.id}`} style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem' }}>{client.name}</Link>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--danger)', marginTop: 4 }}>Motivo: {client.reason}</div>
-                                    </div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>🗓 {client.lastMeet}</div>
-                                </div>
-                            ))}
-                            <div style={{ marginTop: 16, textAlign: 'center' }}>
-                                <Link to="/clientes" style={{ fontSize: '0.8rem', color: 'var(--accent-color)', textDecoration: 'none' }}>Ver todos os Clientes →</Link>
-                            </div>
+                        <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                            Tudo sob controle! Nenhum alerta crítico.
                         </div>
                     </div>
                 )}
