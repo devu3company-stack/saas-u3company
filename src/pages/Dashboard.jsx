@@ -7,9 +7,24 @@ const Dashboard = () => {
     const { user } = useAuth();
     const isDesigner = user?.role === 'designer';
     const [leadsCount, setLeadsCount] = useState(0);
+    const [mrr, setMrr] = useState(0);
     const [tasksCount, setTasksCount] = useState({ pendentes: 0, atrasadas: 0, lista: [] });
 
     useEffect(() => {
+        const savedClientsStr = localStorage.getItem('u3_clients_v2');
+        if (savedClientsStr) {
+            const savedClients = JSON.parse(savedClientsStr);
+            const totalMrr = savedClients.reduce((acc, c) => {
+                if (c.status === 'ativo' && c.mrr) {
+                    const numberStr = String(c.mrr).replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                    const val = parseFloat(numberStr) || 0;
+                    return acc + val;
+                }
+                return acc;
+            }, 0);
+            setMrr(totalMrr);
+        }
+
         const savedLeadsStr = localStorage.getItem('u3_leads');
         if (savedLeadsStr) {
             const savedLeads = JSON.parse(savedLeadsStr);
@@ -60,7 +75,9 @@ const Dashboard = () => {
                             Receita (MRR)
                             <DollarSign size={18} color="var(--success)" />
                         </div>
-                        <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>R$ 21.000</div>
+                        <div className="card-value" style={{ fontSize: '1.8rem', marginTop: 8 }}>
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mrr)}
+                        </div>
                         <div style={{ marginTop: 8, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--success)' }}>
                             <ArrowUpRight size={14} /> +12% vs Mês Anterior
                         </div>
