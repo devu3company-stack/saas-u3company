@@ -15,19 +15,13 @@ const Clients = () => {
     }, [location]);
 
     const [clients, setClients] = useState(() => {
-        const saved = localStorage.getItem('u3_clients');
+        const saved = localStorage.getItem('u3_clients_v2');
         if (saved) return JSON.parse(saved);
-        return [
-            { id: 1, name: 'AlphaTech Solutions', contato: 'Carlos Silva', status: 'ativo', mrr: 'R$ 2.500', responsavel: 'Admin' },
-            { id: 2, name: 'Imobiliária Prime', contato: 'Fernanda Lima', status: 'ativo', mrr: 'R$ 3.000', responsavel: 'Gestor' },
-            { id: 3, name: 'Boutique Fashion', contato: 'Roberto Mendes', status: 'pausado', mrr: 'R$ 1.200', responsavel: 'Admin' },
-            { id: 4, name: 'Construtora Silva', contato: 'Joana', status: 'ativo', mrr: 'R$ 5.500', responsavel: 'Admin' },
-            { id: 5, name: 'Dental Care Clínica', contato: 'Dr. Marcos', status: 'cancelado', mrr: 'R$ 2.000', responsavel: 'Gestor' }
-        ];
+        return [];
     });
 
     useEffect(() => {
-        localStorage.setItem('u3_clients', JSON.stringify(clients));
+        localStorage.setItem('u3_clients_v2', JSON.stringify(clients));
     }, [clients]);
 
     const handleCreateClient = (e) => {

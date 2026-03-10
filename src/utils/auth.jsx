@@ -3,7 +3,8 @@ import { createContext, useContext, useState } from 'react';
 // Usuários do sistema (mock — em produção viria do backend)
 const USERS = [
     { id: 1, email: 'demo@u3company.com', password: 'demo', name: 'Usuário Demonstração', role: 'ceo' },
-    { id: 2, email: 'ceo@u3company.com', password: 'ceo', name: 'Administrador Oculto', role: 'ceo' }
+    { id: 2, email: 'ceo@u3company.com', password: 'ceo', name: 'Administrador Oculto', role: 'ceo' },
+    { id: 3, email: 'designer@u3company.com', password: 'designer123', name: 'Time de Design', role: 'designer' }
 ];
 
 // Permissões por role — define quais rotas cada papel pode acessar
@@ -25,6 +26,9 @@ const PERMISSIONS = {
     ],
     cliente: [
         '/trafego', '/academy'
+    ],
+    designer: [
+        '/dashboard', '/tarefas', '/docs', '/clientes', '/leads'
     ],
 };
 
