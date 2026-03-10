@@ -135,11 +135,25 @@ export const AuthProvider = ({ children }) => {
 
     const getData = (key, fallback = 'null') => {
         const saved = localStorage.getItem(getStorageKey(key));
-        try {
-            return saved ? JSON.parse(saved) : JSON.parse(fallback);
-        } catch (e) {
-            return saved || JSON.parse(fallback);
+
+        if (saved !== null) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                return saved; // Retorna como string se não for um JSON valido
+            }
         }
+
+        // Fallback
+        if (typeof fallback === 'string') {
+            try {
+                return JSON.parse(fallback);
+            } catch (e) {
+                return fallback; // Se o fallback for uma string vazia ''
+            }
+        }
+
+        return fallback;
     };
 
     const setData = (key, value) => {
