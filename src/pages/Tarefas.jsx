@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../utils/auth';
-import { Plus, CheckCircle, Clock, Calendar, AlertCircle, PlayCircle, StopCircle, User, LayoutGrid, List, Flag, Tag as TagIcon } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Calendar, AlertCircle, PlayCircle, StopCircle, User, LayoutGrid, List, Flag, Tag as TagIcon, Paperclip, Image } from 'lucide-react';
 
 const Tarefas = () => {
     const { user, usersList } = useAuth();
@@ -80,7 +80,8 @@ const Tarefas = () => {
             tempoExecucao: 0,
             iniciadaEm: null,
             cardColor: form.cardColor?.value || 'transparent',
-            referencias: form.referencias?.value || ''
+            referencias: form.referencias?.value || '',
+            anexos: []
         };
         setTarefas([novaTarefa, ...tarefas]);
         setModalOpen(false);
@@ -242,6 +243,19 @@ const Tarefas = () => {
                                     {tarefa.referencias && (
                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-main)', padding: 8, borderRadius: 6, marginBottom: 12, border: '1px dashed var(--border-color)' }}>
                                             <strong>Ref/Obs:</strong> {tarefa.referencias}
+                                        </div>
+                                    )}
+
+                                    {tarefa.anexos && tarefa.anexos.length > 0 && (
+                                        <div style={{ marginBottom: 12 }}>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <Paperclip size={10} /> {tarefa.anexos.length} arquivo(s) anexado(s)
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                                {tarefa.anexos.map((anexo, i) => (
+                                                    <img key={i} src={anexo.data} alt={anexo.name} onClick={(e) => { e.stopPropagation(); window.open(anexo.data, '_blank'); }} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border-color)', cursor: 'pointer' }} />
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
 
@@ -543,6 +557,49 @@ const Tarefas = () => {
                             <div className="form-group">
                                 <label className="form-label">Referências / Links / Anexos</label>
                                 <textarea name="referencias" rows="3" className="form-control" defaultValue={editTask.referencias} placeholder="Links do drive, referências visuais, etc"></textarea>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <Paperclip size={14} /> Anexar Criativos / Flyers
+                                </label>
+                                <input type="file" accept="image/*" multiple className="form-control" style={{ padding: 8 }}
+                                    onChange={(e) => {
+                                        const files = Array.from(e.target.files);
+                                        files.forEach(file => {
+                                            const reader = new FileReader();
+                                            reader.onload = (ev) => {
+                                                setTarefas(prev => prev.map(t => {
+                                                    if (t.id === editTask.id) {
+                                                        const novosAnexos = [...(t.anexos || []), { name: file.name, data: ev.target.result }];
+                                                        return { ...t, anexos: novosAnexos };
+                                                    }
+                                                    return t;
+                                                }));
+                                                setEditTask(prev => ({
+                                                    ...prev,
+                                                    anexos: [...(prev.anexos || []), { name: file.name, data: ev.target.result }]
+                                                }));
+                                            };
+                                            reader.readAsDataURL(file);
+                                        });
+                                    }}
+                                />
+                                {editTask.anexos && editTask.anexos.length > 0 && (
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+                                        {editTask.anexos.map((anexo, i) => (
+                                            <div key={i} style={{ position: 'relative' }}>
+                                                <img src={anexo.data} alt={anexo.name} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-color)' }} />
+                                                <button type="button" onClick={() => {
+                                                    const novosAnexos = editTask.anexos.filter((_, idx) => idx !== i);
+                                                    setEditTask({ ...editTask, anexos: novosAnexos });
+                                                    setTarefas(prev => prev.map(t => t.id === editTask.id ? { ...t, anexos: novosAnexos } : t));
+                                                }} style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', backgroundColor: 'var(--danger)', color: 'white', border: 'none', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{anexo.name}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'space-between' }}>
