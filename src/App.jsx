@@ -21,6 +21,7 @@ import Financeiro from './pages/Financeiro';
 import Tarefas from './pages/Tarefas';
 import WhiteLabel from './pages/WhiteLabel';
 import Prospecting from './pages/Prospecting';
+import MetaTracking from './pages/MetaTracking';
 
 function App() {
   useEffect(() => {
@@ -48,12 +49,13 @@ function App() {
             <Route path="clientes" element={<Clients />} />
             <Route path="clientes/:id" element={<ClientDetail />} />
             <Route path="leads" element={<Leads />} />
-            <Route path="prospeccao" element={<Prospecting />} />
-            <Route path="tarefas" element={<Tarefas />} />
-            <Route path="reunioes" element={<Meetings />} />
-            <Route path="financeiro" element={<Financeiro />} />
-            <Route path="trafego" element={<Traffic />} />
-            <Route path="academy" element={<Academy />} />
+            <Route path="/prospeccao" element={<Prospecting />} />
+            <Route path="/tarefas" element={<Tarefas />} />
+            <Route path="/reunioes" element={<Meetings />} />
+            <Route path="/financeiro" element={<Financeiro />} />
+            <Route path="/trafego" element={<Traffic />} />
+            <Route path="/tracking" element={<MetaTracking />} />
+            <Route path="/academy" element={<Academy />} />
             <Route path="metas" element={<Goals />} />
             <Route path="pesquisas" element={<Surveys />} />
             <Route path="docs" element={<Settings />} /> {/* Simulated page for docs */}

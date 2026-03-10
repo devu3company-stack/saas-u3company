@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut, Menu, X, DollarSign, ListTodo, Layers, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, Users, Target, Calendar, FileText, Settings, Search, Bell, TrendingUp, BarChart2, BookOpen, LineChart, MessageCircle, Inbox, GitBranch, FileCheck, Upload, LogOut, Menu, X, DollarSign, ListTodo, Layers, CheckCircle, Radar } from 'lucide-react';
 import { useAuth } from '../utils/auth';
 
 const DashboardLayout = () => {
@@ -35,6 +35,7 @@ const DashboardLayout = () => {
     { path: '/tarefas', label: 'Tarefas da Equipe', icon: <ListTodo size={20} /> },
     { path: '/reunioes', label: 'Agenda de Reuniões', icon: <Calendar size={20} /> },
     { path: '/financeiro', label: 'Financeiro', icon: <DollarSign size={20} /> },
+    { path: '/tracking', label: 'Tracking (UTMfy)', icon: <Radar size={20} /> },
     { path: '/trafego', label: 'Mídia & Performance', icon: <LineChart size={20} /> },
     { path: '/academy', label: 'Trilha de Onboarding', icon: <BookOpen size={20} /> },
     { path: '/metas', label: 'Calendário de Metas', icon: <TrendingUp size={20} /> },

@@ -10,12 +10,12 @@ const USERS = [
 const PERMISSIONS = {
     ceo: [
         '/dashboard', '/clientes', '/leads', '/prospeccao', '/reunioes', '/trafego',
-        '/academy', '/metas', '/pesquisas', '/configuracoes', '/financeiro',
+        '/tracking', '/academy', '/metas', '/pesquisas', '/configuracoes', '/financeiro',
         '/inbox', '/whatsapp-setup', '/fluxos', '/templates', '/tarefas', '/whitelabel'
     ],
     gestor: [
         '/dashboard', '/clientes', '/leads', '/prospeccao', '/reunioes', '/trafego',
-        '/academy', '/inbox', '/fluxos', '/templates', '/metas', '/tarefas'
+        '/tracking', '/academy', '/inbox', '/fluxos', '/templates', '/metas', '/tarefas'
     ],
     financeiro: [
         '/dashboard', '/clientes', '/metas', '/configuracoes', '/financeiro'
