@@ -3,6 +3,7 @@ import { createContext, useContext, useState } from 'react';
 // Usuários do sistema (mock — em produção viria do backend)
 const USERS = [
     { id: 1, email: 'demo@u3company.com', password: 'demo', name: 'Usuário Demonstração', role: 'ceo' },
+    { id: 2, email: 'ceo@u3company.com', password: 'ceo', name: 'Administrador Oculto', role: 'ceo' }
 ];
 
 // Permissões por role — define quais rotas cada papel pode acessar
