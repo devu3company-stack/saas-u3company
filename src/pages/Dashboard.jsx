@@ -11,7 +11,7 @@ const Dashboard = () => {
     const [tasksCount, setTasksCount] = useState({ pendentes: 0, atrasadas: 0, lista: [] });
 
     useEffect(() => {
-        const savedClients = getData('u3_clients_v2');
+        const savedClients = getData('u3_clients_v2', '[]') || [];
         const totalMrr = savedClients.reduce((acc, c) => {
             if (c.status === 'ativo' && c.mrr) {
                 const numberStr = String(c.mrr).replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
@@ -22,10 +22,10 @@ const Dashboard = () => {
         }, 0);
         setMrr(totalMrr);
 
-        const savedLeads = getData('u3_leads');
+        const savedLeads = getData('u3_leads', '[]') || [];
         setLeadsCount(savedLeads.filter(l => l.status === 'Novo').length || 12);
 
-        const savedTasks = getData('u3_tarefas');
+        const savedTasks = getData('u3_tarefas', '[]') || [];
         const pendentes = savedTasks.filter(t => t.status === 'pendente' || t.status === 'em_andamento').length;
         const atrasadas = savedTasks.filter(t => {
             if (t.status === 'concluida') return false;

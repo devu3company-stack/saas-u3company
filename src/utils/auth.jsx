@@ -51,16 +51,23 @@ export const AuthProvider = ({ children }) => {
         return saved ? JSON.parse(saved) : null;
     });
 
+    const getStorageKey = (key) => {
+        if (!user) return key; // sem sessão: chave limpa
+        if (user.id === 1) return `demo_${key}`; // usuário demo isolado
+        if (user.id === 2) return key; // CEO dono - chave original (compatibilidade)
+        return `u3_${user.id}_${key}`; // todos os outros usuários: namespace próprio
+    };
+
     useEffect(() => {
-        // Captura tags UTM da URL no momento em que a pessoa cai em qualquer tela do SaaS
+        // Captura tags UTM da URL
         const urlParams = new URLSearchParams(window.location.search);
         if (Array.from(urlParams.keys()).length > 0) {
             const stored = localStorage.getItem(getStorageKey('u3_utm_params'));
-            if (!stored) { // Só grava a primeira origem
+            if (!stored) {
                 localStorage.setItem(getStorageKey('u3_utm_params'), JSON.stringify(urlParams.toString()));
             }
         }
-    }, [user]); // Re-run when user context changes to apply demo prefix if needed
+    }, [user]);
 
     const getUserPermissions = (targetUser) => {
         if (!targetUser) return [];
@@ -129,10 +136,15 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
     };
 
-    const getStorageKey = (key) => {
-        if (user && user.id === 1) return `demo_${key}`;
-        return key;
-    };
+    const changePassword = (currentPassword, newPassword) => {
+        const fullUser = usersList.find(u => u.id === user?.id);
+        if (!fullUser) return { success: false, error: 'Usuário não encontrado.' };
+        if (fullUser.password !== currentPassword) return { success: false, error: 'Senha atual incorreta.' };
+        return updateUser(user.id, { password: newPassword });
+    }
+
+    const getStorageKey_placeholder = null; // definido acima (manter ordem);
+
 
     const getData = (key, fallback = 'null') => {
         const saved = localStorage.getItem(getStorageKey(key));
@@ -186,6 +198,7 @@ export const AuthProvider = ({ children }) => {
         <AuthContext.Provider value={{
             user, login, logout, hasPermission, getAllowedMenuItems,
             usersList, createUser, updateUser, deleteUser, getUserPermissions,
+            changePassword,
             PERMISSIONS: ROLE_PRESETS, ALL_ROUTES,
             getStorageKey, getData, setData, removeData, clearData
         }}>

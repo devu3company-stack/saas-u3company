@@ -1,15 +1,38 @@
 import { useState } from 'react';
-import { Save, User, Link as LinkIcon, Webhook, Shield, Plus, Trash2 } from 'lucide-react';
+import { Save, User, Link as LinkIcon, Webhook, Shield, Plus, Trash2, Lock, CheckCircle, XCircle } from 'lucide-react';
+import { useAuth } from '../utils/auth';
 
 const Settings = () => {
-    const [activeTab, setActiveTab] = useState('Geral');
+    const { user, changePassword } = useAuth();
+    const [activeTab, setActiveTab] = useState('conta');
 
-    // Mock user roles
-    const [users, setUsers] = useState([
-        { id: 1, name: 'Admin Principal', email: 'contato@u3company.com', role: 'Admin' },
-        { id: 2, name: 'Gestor de Tráfego 1', email: 'trafego@u3company.com', role: 'SDR/Gestor' },
-        { id: 3, name: 'Financeiro', email: 'fin@u3company.com', role: 'Financeiro' },
-    ]);
+    // Trocar Senha
+    const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+    const [pwFeedback, setPwFeedback] = useState(null);
+
+    const handleChangePw = (e) => {
+        e.preventDefault();
+        if (pwForm.next !== pwForm.confirm) {
+            setPwFeedback({ ok: false, msg: 'As novas senhas não coincidem.' });
+            return;
+        }
+        if (pwForm.next.length < 6) {
+            setPwFeedback({ ok: false, msg: 'A nova senha precisa ter pelo menos 6 caracteres.' });
+            return;
+        }
+        const result = changePassword(pwForm.current, pwForm.next);
+        if (result.success) {
+            setPwFeedback({ ok: true, msg: 'Senha alterada com sucesso! 🎉' });
+            setPwForm({ current: '', next: '', confirm: '' });
+        } else {
+            setPwFeedback({ ok: false, msg: result.error });
+        }
+        setTimeout(() => setPwFeedback(null), 4000);
+    };
+
+    const tabs = ['conta', 'geral', 'integracoes'];
+    const tabLabels = { conta: 'Minha Conta', geral: 'Geral', integracoes: 'Integrações (API)' };
+
     return (
         <div>
             <div className="page-header">
@@ -17,22 +40,101 @@ const Settings = () => {
                     <h2>Configurações</h2>
                     <p className="text-muted">Ajustes do sistema e integrações</p>
                 </div>
-                <button className="btn btn-primary"><Save size={16} /> Salvar Alterações</button>
             </div>
 
             <div className="tabs">
-                {['Geral', 'Usuários e Permissões', 'Integrações (API)'].map(t => (
+                {tabs.map(t => (
                     <div
                         key={t}
                         className={`tab ${activeTab === t ? 'active' : ''}`}
                         onClick={() => setActiveTab(t)}
                     >
-                        {t}
+                        {tabLabels[t]}
                     </div>
                 ))}
             </div>
 
-            {activeTab === 'Geral' && (
+            {/* ABA: MINHA CONTA */}
+            {activeTab === 'conta' && (
+                <div className="grid-cards" style={{ gridTemplateColumns: 'minmax(300px, 500px)' }}>
+                    {/* Info do usuário */}
+                    <div className="card">
+                        <h3 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <User size={20} color="var(--accent-color)" /> Perfil do Usuário
+                        </h3>
+                        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 24, padding: '16px', backgroundColor: 'var(--bg-main)', borderRadius: 12 }}>
+                            <div style={{ width: 56, height: 56, borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.4rem', flexShrink: 0 }}>
+                                {user?.name?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{user?.name || '-'}</div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{user?.email || '-'}</div>
+                                <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--bg-tertiary)', padding: '2px 10px', borderRadius: 20, marginTop: 4, display: 'inline-block', textTransform: 'uppercase', letterSpacing: 1 }}>
+                                    {user?.role || 'usuário'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Form de troca de senha */}
+                        <h4 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Lock size={16} color="var(--accent-color)" /> Alterar Senha
+                        </h4>
+
+                        {pwFeedback && (
+                            <div style={{
+                                padding: '12px 16px', borderRadius: 8, marginBottom: 16,
+                                backgroundColor: pwFeedback.ok ? 'rgba(0, 208, 132, 0.1)' : 'rgba(235, 20, 76, 0.1)',
+                                border: `1px solid ${pwFeedback.ok ? 'var(--success)' : 'var(--danger)'}`,
+                                display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem'
+                            }}>
+                                {pwFeedback.ok ? <CheckCircle size={16} color="var(--success)" /> : <XCircle size={16} color="var(--danger)" />}
+                                {pwFeedback.msg}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleChangePw} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div className="form-group">
+                                <label className="form-label">Senha Atual</label>
+                                <input
+                                    type="password"
+                                    className="form-control"
+                                    required
+                                    value={pwForm.current}
+                                    onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))}
+                                    placeholder="Digite sua senha atual"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Nova Senha</label>
+                                <input
+                                    type="password"
+                                    className="form-control"
+                                    required
+                                    value={pwForm.next}
+                                    onChange={e => setPwForm(p => ({ ...p, next: e.target.value }))}
+                                    placeholder="Mínimo 6 caracteres"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Confirmar Nova Senha</label>
+                                <input
+                                    type="password"
+                                    className="form-control"
+                                    required
+                                    value={pwForm.confirm}
+                                    onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))}
+                                    placeholder="Repita a nova senha"
+                                />
+                            </div>
+                            <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center' }}>
+                                <Lock size={16} /> Salvar Nova Senha
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'geral' && (
                 <div className="grid-cards">
                     <div className="card">
                         <h3 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -46,61 +148,14 @@ const Settings = () => {
                             <label className="form-label">E-mail de Contato Principal</label>
                             <input type="email" className="form-control" defaultValue="contato@u3company.com" />
                         </div>
+                        <button className="btn btn-primary" style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Save size={16} /> Salvar Alterações
+                        </button>
                     </div>
                 </div>
             )}
 
-            {activeTab === 'Usuários e Permissões' && (
-                <div className="card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                        <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <Shield size={20} color="var(--accent-color)" /> Controle de Acesso
-                        </h3>
-                        <button className="btn btn-outline" style={{ fontSize: '0.8rem' }}><Plus size={14} /> Convidar Usuário</button>
-                    </div>
-
-                    <p className="text-muted" style={{ marginBottom: 24, fontSize: '0.9rem' }}>
-                        Usuários com nível <strong>Admin</strong> tem acesso total. O <strong>Gestor</strong> não acessa faturamento.
-                        O <strong>Cliente</strong> só enxerga os dados do seu próprio contrato em Cliente 360°.
-                    </p>
-
-                    <div className="table-container" style={{ border: '1px solid var(--border-color)', borderRadius: 8 }}>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nome do Usuário</th>
-                                    <th>E-mail</th>
-                                    <th>Tipo de Acesso</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.map(u => (
-                                    <tr key={u.id}>
-                                        <td style={{ fontWeight: 600 }}>{u.name}</td>
-                                        <td>{u.email}</td>
-                                        <td>
-                                            <select className="form-control" style={{ padding: '6px 12px', fontSize: '0.85rem' }} defaultValue={u.role}>
-                                                <option>Admin</option>
-                                                <option>SDR/Gestor</option>
-                                                <option>Financeiro</option>
-                                                <option>Cliente (Visualizador)</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <button className="btn btn-outline" style={{ padding: '6px 10px', color: 'var(--danger)', borderColor: 'var(--border-color)' }}>
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {activeTab === 'Integrações (API)' && (
+            {activeTab === 'integracoes' && (
                 <div className="grid-cards" style={{ gridTemplateColumns: 'minmax(300px, 1fr)' }}>
                     <div className="card">
                         <h3 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -118,33 +173,16 @@ const Settings = () => {
                         </div>
 
                         <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid var(--border-color)' }}>
-                            <h4 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>Integração Flowbuilder Externo (Typebot/n8n)</h4>
-
+                            <h4 style={{ marginBottom: 16 }}>Integração Flowbuilder Externo (Typebot/n8n)</h4>
                             <div className="form-group">
-                                <label className="form-label" style={{ fontSize: '0.8rem' }}>URL do seu Flowbuilder (para onde mandar as mensagens)</label>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <input type="text" className="form-control" placeholder="https://bot.suaagencia.com/api/v1/receive..." />
-                                </div>
-                                <p style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                    Se configurado, nós **não** vamos responder usando a IA Nativa do CRM, vamos encaminhar todos os Webhooks que a Evolution receber direto para esta URL do seu robô externo.
-                                </p>
-                            </div>
-
-                            <div className="form-group" style={{ marginTop: 16 }}>
-                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Webhook de Retorno (Typebot ➔ CRM Humano)</label>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <input type="text" className="form-control" readOnly value="https://api.u3company.com/v1/flow/handover" />
-                                    <button className="btn btn-outline" style={{ padding: '0 16px' }}><LinkIcon size={16} /></button>
-                                </div>
-                                <p style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--success)' }}>
-                                    No seu Flowbuilder, quando quiser passar para humano, faça um POST para esta URL enviando o `telefone`. Ele irá pausar o seu bot e jogar o cliente para a nossa tela de **Inbox (Chat)**.
-                                </p>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>URL do seu Flowbuilder</label>
+                                <input type="text" className="form-control" placeholder="https://bot.suaagencia.com/api/v1/receive..." />
                             </div>
                         </div>
                     </div>
                 </div>
             )}
-        </div >
+        </div>
     );
 };
 
