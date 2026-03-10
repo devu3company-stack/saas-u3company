@@ -17,9 +17,11 @@ const Leads = () => {
     const [editLead, setEditLead] = useState(null);
     const [currentView, setCurrentView] = useState('pipeline'); // 'pipeline' | 'followup'
 
-    useEffect(() => {
-        setData('u3_leads', pipeline);
-    }, [pipeline, setData]);
+    // PERSISTÊNCIA MANUAL
+    const saveLeads = (newList) => {
+        setPipeline(newList);
+        setData('u3_leads', newList);
+    };
 
     const handleDragStart = (e, leadId) => {
         e.dataTransfer.setData('leadId', leadId);
@@ -29,9 +31,10 @@ const Leads = () => {
         e.preventDefault();
         const leadId = parseInt(e.dataTransfer.getData('leadId'));
         if (leadId) {
-            setPipeline(pipeline.map(l =>
+            const newList = pipeline.map(l =>
                 l.id === leadId ? { ...l, status: targetStatus, updatedAt: Date.now() } : l
-            ));
+            );
+            saveLeads(newList);
         }
     };
 
@@ -43,7 +46,8 @@ const Leads = () => {
 
     const handleSaveEdit = (e) => {
         e.preventDefault();
-        setPipeline(pipeline.map(l => l.id === editLead.id ? { ...editLead, updatedAt: Date.now() } : l));
+        const newList = pipeline.map(l => l.id === editLead.id ? { ...editLead, updatedAt: Date.now() } : l);
+        saveLeads(newList);
         setEditLead(null);
     };
 
@@ -76,7 +80,8 @@ const Leads = () => {
                     <button className="btn btn-primary" onClick={() => {
                         const nome = prompt("Nome do novo Lead Manual:");
                         if (nome) {
-                            setPipeline([...pipeline, { id: Date.now(), name: nome, origem: 'Manual', campanha: '-', status: currentView === 'pipeline' ? 'Novo' : 'Follow D1', updatedAt: Date.now(), cardColor: '#ffffff', comentarios: '' }]);
+                            const newList = [...pipeline, { id: Date.now(), name: nome, origem: 'Manual', campanha: '-', status: currentView === 'pipeline' ? 'Novo' : 'Follow D1', updatedAt: Date.now(), cardColor: '#ffffff', comentarios: '' }];
+                            saveLeads(newList);
                         }
                     }} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <Plus size={16} /> Lead Manual
@@ -265,7 +270,8 @@ const Leads = () => {
 
                             <div style={{ display: 'flex', gap: 12, marginTop: 32, justifyContent: 'space-between' }}>
                                 <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => {
-                                    setPipeline(pipeline.filter(l => l.id !== editLead.id));
+                                    const newList = pipeline.filter(l => l.id !== editLead.id);
+                                    saveLeads(newList);
                                     setEditLead(null);
                                 }}>Excluir Lead</button>
                                 <div style={{ display: 'flex', gap: 12 }}>

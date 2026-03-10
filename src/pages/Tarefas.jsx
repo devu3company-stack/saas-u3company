@@ -186,7 +186,7 @@ const Tarefas = () => {
                         </button>
                     </div>
 
-                    {(user.role === 'ceo' || user.role === 'gestor') && (
+                    {user.role !== 'cliente' && (
                         <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
                             <Plus size={16} /> Nova Tarefa
                         </button>
@@ -578,13 +578,6 @@ const Tarefas = () => {
                                         files.forEach(file => {
                                             const reader = new FileReader();
                                             reader.onload = (ev) => {
-                                                setTarefas(prev => prev.map(t => {
-                                                    if (t.id === editTask.id) {
-                                                        const novosAnexos = [...(t.anexos || []), { name: file.name, data: ev.target.result }];
-                                                        return { ...t, anexos: novosAnexos };
-                                                    }
-                                                    return t;
-                                                }));
                                                 setEditTask(prev => ({
                                                     ...prev,
                                                     anexos: [...(prev.anexos || []), { name: file.name, data: ev.target.result }]
@@ -602,7 +595,6 @@ const Tarefas = () => {
                                                 <button type="button" onClick={() => {
                                                     const novosAnexos = editTask.anexos.filter((_, idx) => idx !== i);
                                                     setEditTask({ ...editTask, anexos: novosAnexos });
-                                                    setTarefas(prev => prev.map(t => t.id === editTask.id ? { ...t, anexos: novosAnexos } : t));
                                                 }} style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', backgroundColor: 'var(--danger)', color: 'white', border: 'none', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                                                 <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{anexo.name}</div>
                                             </div>
@@ -613,8 +605,11 @@ const Tarefas = () => {
 
                             <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'space-between' }}>
                                 <button type="button" className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }} onClick={() => {
-                                    setTarefas(tarefas.filter(t => t.id !== editTask.id));
-                                    setEditTask(null);
+                                    if (window.confirm('Excluir esta tarefa?')) {
+                                        const newList = tarefas.filter(t => t.id !== editTask.id);
+                                        saveTarefas(newList);
+                                        setEditTask(null);
+                                    }
                                 }}>Excluir</button>
                                 <div style={{ display: 'flex', gap: 12 }}>
                                     <button type="button" className="btn btn-outline" onClick={() => setEditTask(null)}>Cancelar</button>

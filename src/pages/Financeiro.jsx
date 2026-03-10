@@ -15,7 +15,7 @@ const Financeiro = () => {
     });
 
     const [caixa, setCaixa] = useState(() => {
-        return Number(getData('u3_caixa', '50000'));
+        return Number(getData('u3_caixa', '0'));
     });
 
     const [mrrAtual, setMrrAtual] = useState(0); // Exemplo fixo ou pega do localStorage
@@ -31,11 +31,12 @@ const Financeiro = () => {
     const [showCustoModal, setShowCustoModal] = useState(false);
     const [showCaixaModal, setShowCaixaModal] = useState(false);
 
-    useEffect(() => {
-        setData('u3_custos', custos);
-        setData('u3_caixa', caixa.toString());
-        setData('u3_inadimplentes', inadimplentes);
-    }, [custos, caixa, inadimplentes, setData]);
+    // PERSISTÊNCIA MANUAL
+    const saveFinanceiro = (newCustos, newCaixa, newInads) => {
+        if (newCustos) { setCustos(newCustos); setData('u3_custos', newCustos); }
+        if (newCaixa !== undefined) { setCaixa(newCaixa); setData('u3_caixa', newCaixa.toString()); }
+        if (newInads) { setInadimplentes(newInads); setData('u3_inadimplentes', newInads); }
+    };
 
     useEffect(() => {
         const clients = getData('u3_clients_v2', '[]');
@@ -66,7 +67,8 @@ const Financeiro = () => {
             data: form.data.value.split('-').reverse().join('/'),
             categoria: form.categoria.value
         };
-        setCustos([novoCusto, ...custos]);
+        const newList = [novoCusto, ...custos];
+        saveFinanceiro(newList, undefined, undefined);
         setShowCustoModal(false);
     };
 
@@ -261,7 +263,7 @@ const Financeiro = () => {
                         <form onSubmit={(e) => {
                             e.preventDefault();
                             const vText = e.target.caixaValor.value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
-                            setCaixa(Number(vText));
+                            saveFinanceiro(undefined, Number(vText), undefined);
                             setShowCaixaModal(false);
                         }}>
                             <div className="form-group">

@@ -20,17 +20,18 @@ const Clients = () => {
 
     const [clients, setClients] = useState(() => getData('u3_clients_v2', '[]'));
 
-    useEffect(() => {
-        setData('u3_clients_v2', clients);
-    }, [clients, setData]);
+    // PERSISTÊNCIA MANUAL
+    const saveClients = (newList) => {
+        setClients(newList);
+        setData('u3_clients_v2', newList);
+    };
 
     const handleSaveClient = (e) => {
         e.preventDefault();
         const form = e.target;
 
         if (editingClient) {
-            // Atualizar cliente existente
-            const updatedClients = clients.map(c => {
+            const newList = clients.map(c => {
                 if (c.id === editingClient.id) {
                     return {
                         ...c,
@@ -43,7 +44,7 @@ const Clients = () => {
                 }
                 return c;
             });
-            setClients(updatedClients);
+            saveClients(newList);
         } else {
             // Criar novo
             const newClient = {
@@ -54,7 +55,7 @@ const Clients = () => {
                 mrr: form.mrr.value,
                 responsavel: 'Admin'
             };
-            setClients([newClient, ...clients]);
+            saveClients([newClient, ...clients]);
         }
 
         closeModal();
@@ -67,7 +68,7 @@ const Clients = () => {
 
     const handleDelete = (id) => {
         if (window.confirm('Certeza que deseja excluir este cliente definitivamente? A ação não pode ser desfeita.')) {
-            setClients(clients.filter(c => c.id !== id));
+            saveClients(clients.filter(c => c.id !== id));
         }
     };
 

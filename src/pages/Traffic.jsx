@@ -13,32 +13,26 @@ const Traffic = () => {
     const clients = getData('u3_clients', '[]');
 
     // Dados Dinâmicos usando State para permitir a simulação do upload
-    const [dashboardData, setDashboardData] = useState({
-        investimento: '16.060',
-        receita: '88.060',
-        roas: '5.48x',
-        cac: '120,50',
-        cpl: '15,30',
-        mensagens: '1.050',
-        cliques: '5.240',
-        ctr: '2.18%',
-        chartData: [
-            { name: 'Jan', investimento: 4000, receita: 12400 },
-            { name: 'Fev', investimento: 3000, receita: 13980 },
-            { name: 'Mar', investimento: 2000, receita: 9800 },
-            { name: 'Abr', investimento: 2780, receita: 19080 },
-            { name: 'Mai', investimento: 1890, receita: 14800 },
-            { name: 'Jun', investimento: 2390, receita: 18000 },
-        ],
-        roasChartData: [
-            { name: 'Jan', roas: 3.1 },
-            { name: 'Fev', roas: 4.6 },
-            { name: 'Mar', roas: 4.9 },
-            { name: 'Abr', roas: 6.8 },
-            { name: 'Mai', roas: 7.8 },
-            { name: 'Jun', roas: 7.5 },
-        ],
-        insight: "O CPL caiu 15% após o lançamento do novo criativo no Meta Ads. Para o próximo mês, vamos focar a maior parte do orçamento na campanha de Remarketing devido ao ROAS alto (7.5x)."
+    const [dashboardData, setDashboardData] = useState(() => {
+        const initialMock = {
+            investimento: '16.060', receita: '88.060', roas: '5.48x', cac: '120,50', cpl: '15,30', mensagens: '1.050', cliques: '5.240', ctr: '2.18%',
+            chartData: [
+                { name: 'Jan', investimento: 4000, receita: 12400 },
+                { name: 'Fev', investimento: 3000, receita: 13980 },
+                { name: 'Mar', investimento: 2000, receita: 9800 },
+                { name: 'Abr', investimento: 2780, receita: 19080 },
+                { name: 'Mai', investimento: 1890, receita: 14800 },
+                { name: 'Jun', investimento: 2390, receita: 18000 },
+            ],
+            roasChartData: [
+                { name: 'Jan', roas: 3.1 }, { name: 'Fev', roas: 4.6 }, { name: 'Mar', roas: 4.9 }, { name: 'Abr', roas: 6.8 }, { name: 'Mai', roas: 7.8 }, { name: 'Jun', roas: 7.5 },
+            ],
+            insight: "O CPL caiu 15% após o lançamento do novo criativo no Meta Ads."
+        };
+        const saved = getData('u3_traffic_dashboard', JSON.stringify(initialMock));
+        // Se for tenant e retornar algo vazio/array (erro de tipo), retorna o objeto vazio padrão
+        if (!saved || Array.isArray(saved)) return { investimento: '0', receita: '0', roas: '0', cac: '0', cpl: '0', mensagens: '0', cliques: '0', ctr: '0%', chartData: [], roasChartData: [], insight: 'Nenhum dado importado ainda.' };
+        return saved;
     });
 
     const handleFileUpload = (e) => {

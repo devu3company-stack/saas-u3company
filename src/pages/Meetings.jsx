@@ -27,9 +27,11 @@ const Meetings = () => {
         return getData('u3_meetings', JSON.stringify(initialMock));
     });
 
-    useEffect(() => {
-        setData('u3_meetings', meetings);
-    }, [meetings, setData]);
+    // PERSISTÊNCIA MANUAL
+    const saveMeetings = (newList) => {
+        setMeetings(newList);
+        setData('u3_meetings', newList);
+    };
 
     const generateGoogleCalendarLink = (meetParams) => {
         if (!meetParams.date) return '#';
@@ -69,7 +71,7 @@ const Meetings = () => {
             details: newMeet.details,
             meetLink: newMeet.meetLink
         };
-        setMeetings([...meetings, novoCompromisso]);
+        saveMeetings([...meetings, novoCompromisso]);
 
         // Abre em nova guia
         const url = generateGoogleCalendarLink(newMeet);
@@ -80,7 +82,7 @@ const Meetings = () => {
 
     const handleSaveEdit = (e) => {
         e.preventDefault();
-        setMeetings(meetings.map(m => m.id === editMeet.id ? editMeet : m));
+        saveMeetings(meetings.map(m => m.id === editMeet.id ? editMeet : m));
         setEditMeet(null);
     };
 
@@ -227,7 +229,7 @@ const Meetings = () => {
 
                             <div style={{ display: 'flex', gap: 12, marginTop: 32, justifyContent: 'space-between' }}>
                                 <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => {
-                                    setMeetings(meetings.filter(m => m.id !== editMeet.id));
+                                    saveMeetings(meetings.filter(m => m.id !== editMeet.id));
                                     setEditMeet(null);
                                 }}>Excluir</button>
                                 <div style={{ display: 'flex', gap: 12 }}>
@@ -266,10 +268,7 @@ const Meetings = () => {
                                         <option key={c.id} value={c.name}>{c.name}</option>
                                     ))}
                                     {getData('u3_clients_v2', '[]').length === 0 && (
-                                        <>
-                                            <option value="Imobiliária Prime">Imobiliária Prime</option>
-                                            <option value="AlphaTech Solutions">AlphaTech Solutions</option>
-                                        </>
+                                        <option value="Cliente Teste">Cliente Teste</option>
                                     )}
                                 </select>
                             </div>
