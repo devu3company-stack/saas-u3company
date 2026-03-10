@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Target, MessageCircle, Calendar, Plus, Link as LinkIcon, AlertTriangle, MessageSquare, Edit } from 'lucide-react';
+import { useAuth } from '../utils/auth';
 
 const Leads = () => {
+    const { getData, setData } = useAuth();
     const [pipeline, setPipeline] = useState(() => {
-        const saved = localStorage.getItem('u3_leads');
-        if (saved) return JSON.parse(saved);
-        return [
+        const initialMock = [
             { id: 1, name: 'Marcos Silva', origem: 'Meta Ads', campanha: 'Black Friday', status: 'Novo', updatedAt: Date.now() - (3 * 24 * 60 * 60 * 1000), cardColor: '#ffffff', comentarios: '' },
             { id: 2, name: 'Juliana Costa', origem: 'Google Search', campanha: 'Lead Gen', status: 'Diagnóstico', updatedAt: Date.now() - (1000 * 60 * 60), cardColor: '#ffffff', comentarios: 'Precisa ligar de tarde' },
             { id: 3, name: 'Roberto Santos', origem: 'Site Orgânico', campanha: '-', status: 'Contato', updatedAt: Date.now() - (36 * 60 * 60 * 1000), cardColor: '#ffffff', comentarios: '' }
         ];
+        return getData('u3_leads', JSON.stringify(initialMock));
     });
 
     const [showWebhook, setShowWebhook] = useState(false);
@@ -17,8 +18,8 @@ const Leads = () => {
     const [currentView, setCurrentView] = useState('pipeline'); // 'pipeline' | 'followup'
 
     useEffect(() => {
-        localStorage.setItem('u3_leads', JSON.stringify(pipeline));
-    }, [pipeline]);
+        setData('u3_leads', pipeline);
+    }, [pipeline, setData]);
 
     const handleDragStart = (e, leadId) => {
         e.dataTransfer.setData('leadId', leadId);

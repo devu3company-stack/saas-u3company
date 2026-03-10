@@ -4,7 +4,7 @@ import { Plus, Filter, Edit2, Trash2 } from 'lucide-react';
 import { useAuth } from '../utils/auth';
 
 const Clients = () => {
-    const { user } = useAuth();
+    const { user, getData, setData } = useAuth();
     const isDesigner = user?.role === 'designer';
     const location = useLocation();
     const [filter, setFilter] = useState('Todos');
@@ -18,15 +18,11 @@ const Clients = () => {
         }
     }, [location]);
 
-    const [clients, setClients] = useState(() => {
-        const saved = localStorage.getItem('u3_clients_v2');
-        if (saved) return JSON.parse(saved);
-        return [];
-    });
+    const [clients, setClients] = useState(() => getData('u3_clients_v2', '[]'));
 
     useEffect(() => {
-        localStorage.setItem('u3_clients_v2', JSON.stringify(clients));
-    }, [clients]);
+        setData('u3_clients_v2', clients);
+    }, [clients, setData]);
 
     const handleSaveClient = (e) => {
         e.preventDefault();

@@ -5,26 +5,25 @@ import { useAuth } from '../utils/auth';
 
 const ClientDetail = () => {
     const { id } = useParams();
-    const { user } = useAuth();
+    const { user, getData, setData } = useAuth();
     const isDesigner = user?.role === 'designer';
     const [activeTab, setActiveTab] = useState('onboarding');
 
     // Onboarding Trail Tracker
+    // Onboarding Trail Tracker
     const [onboardingSteps, setOnboardingSteps] = useState(() => {
-        const saved = localStorage.getItem(`u3_onboarding_${id}`);
-        if (saved) return JSON.parse(saved);
-        return [
+        return getData(`u3_onboarding_${id}`, JSON.stringify([
             { id: 1, title: 'Reunião de Kickoff', desc: 'Apresentação da equipe e metas', done: false },
             { id: 2, title: 'Ativos Digitais (BM, Ads)', desc: 'Conseguir acessos ao Meta e Google Ads', done: false },
             { id: 3, title: 'Criação de Criativos / Copy', desc: 'Produzir peças para a campanha', done: false },
             { id: 4, title: 'Aprovação Final com Cliente', desc: 'Validar assets', done: false },
             { id: 5, title: 'Ativação das Campanhas', desc: 'Campanhas no ar', done: false }
-        ];
+        ]));
     });
 
     useEffect(() => {
-        localStorage.setItem(`u3_onboarding_${id}`, JSON.stringify(onboardingSteps));
-    }, [onboardingSteps]);
+        setData(`u3_onboarding_${id}`, onboardingSteps);
+    }, [onboardingSteps, id, setData]);
 
     const toggleStep = (stepId) => {
         setOnboardingSteps(onboardingSteps.map(s =>
@@ -38,13 +37,12 @@ const ClientDetail = () => {
 
     // Materiais do cliente
     const [materiais, setMateriais] = useState(() => {
-        const saved = localStorage.getItem(`u3_materiais_${id}`);
-        return saved ? JSON.parse(saved) : { briefing: '', logo: null, assets: [] };
+        return getData(`u3_materiais_${id}`, JSON.stringify({ briefing: '', logo: null, assets: [] }));
     });
 
     useEffect(() => {
-        localStorage.setItem(`u3_materiais_${id}`, JSON.stringify(materiais));
-    }, [materiais, id]);
+        setData(`u3_materiais_${id}`, materiais);
+    }, [materiais, id, setData]);
 
     const handleUploadAsset = (e) => {
         const files = Array.from(e.target.files);
@@ -71,7 +69,7 @@ const ClientDetail = () => {
     };
 
     useEffect(() => {
-        const clients = JSON.parse(localStorage.getItem('u3_clients_v2') || '[]');
+        const clients = getData('u3_clients_v2', '[]');
         const found = clients.find(c => c.id.toString() === id);
         if (found) {
             setClient({
@@ -92,7 +90,7 @@ const ClientDetail = () => {
             });
         }
 
-        const tasks = JSON.parse(localStorage.getItem('u3_tarefas') || '[]');
+        const tasks = getData('u3_tarefas', '[]');
         // Filter tasks by client name (if matched)
         const matchedTasks = tasks.filter(t => found && t.cliente.toLowerCase().includes(found.name.toLowerCase()));
 

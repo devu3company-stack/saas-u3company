@@ -117,8 +117,33 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
     };
 
+    const getStorageKey = (key) => {
+        if (user && user.id === 1) return `demo_${key}`;
+        return key;
+    };
+
+    const getData = (key, fallback = '[]') => {
+        const fullKey = getStorageKey(key);
+        const saved = localStorage.getItem(fullKey);
+        try {
+            return saved ? JSON.parse(saved) : JSON.parse(fallback);
+        } catch (e) {
+            return JSON.parse(fallback);
+        }
+    };
+
+    const setData = (key, value) => {
+        const fullKey = getStorageKey(key);
+        localStorage.setItem(fullKey, JSON.stringify(value));
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, logout, hasPermission, getAllowedMenuItems, usersList, createUser, updateUser, deleteUser, getUserPermissions, PERMISSIONS: ROLE_PRESETS, ALL_ROUTES }}>
+        <AuthContext.Provider value={{
+            user, login, logout, hasPermission, getAllowedMenuItems,
+            usersList, createUser, updateUser, deleteUser, getUserPermissions,
+            PERMISSIONS: ROLE_PRESETS, ALL_ROUTES,
+            getStorageKey, getData, setData
+        }}>
             {children}
         </AuthContext.Provider>
     );

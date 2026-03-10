@@ -4,36 +4,28 @@ import { Target, DollarSign, Calendar, AlertTriangle, MessageSquare, CheckSquare
 import { useAuth } from '../utils/auth';
 
 const Dashboard = () => {
-    const { user } = useAuth();
+    const { user, getData } = useAuth();
     const isDesigner = user?.role === 'designer';
     const [leadsCount, setLeadsCount] = useState(0);
     const [mrr, setMrr] = useState(0);
     const [tasksCount, setTasksCount] = useState({ pendentes: 0, atrasadas: 0, lista: [] });
 
     useEffect(() => {
-        const savedClientsStr = localStorage.getItem('u3_clients_v2');
-        if (savedClientsStr) {
-            const savedClients = JSON.parse(savedClientsStr);
-            const totalMrr = savedClients.reduce((acc, c) => {
-                if (c.status === 'ativo' && c.mrr) {
-                    const numberStr = String(c.mrr).replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                    const val = parseFloat(numberStr) || 0;
-                    return acc + val;
-                }
-                return acc;
-            }, 0);
-            setMrr(totalMrr);
-        }
+        const savedClients = getData('u3_clients_v2');
+        const totalMrr = savedClients.reduce((acc, c) => {
+            if (c.status === 'ativo' && c.mrr) {
+                const numberStr = String(c.mrr).replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                const val = parseFloat(numberStr) || 0;
+                return acc + val;
+            }
+            return acc;
+        }, 0);
+        setMrr(totalMrr);
 
-        const savedLeadsStr = localStorage.getItem('u3_leads');
-        if (savedLeadsStr) {
-            const savedLeads = JSON.parse(savedLeadsStr);
-            setLeadsCount(savedLeads.filter(l => l.status === 'Novo').length);
-        } else {
-            setLeadsCount(12); // Mock inicial se não tiver nada
-        }
+        const savedLeads = getData('u3_leads');
+        setLeadsCount(savedLeads.filter(l => l.status === 'Novo').length || 12);
 
-        const savedTasks = JSON.parse(localStorage.getItem('u3_tarefas') || '[]');
+        const savedTasks = getData('u3_tarefas');
         const pendentes = savedTasks.filter(t => t.status === 'pendente' || t.status === 'em_andamento').length;
         const atrasadas = savedTasks.filter(t => {
             if (t.status === 'concluida') return false;
@@ -45,7 +37,7 @@ const Dashboard = () => {
             atrasadas,
             lista: savedTasks.slice(0, 3)
         });
-    }, []);
+    }, [getData]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
