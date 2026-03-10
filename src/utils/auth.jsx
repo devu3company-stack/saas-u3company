@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 // Para desenvolvimento local: http://localhost:3001
 // Em produção: URL do servidor onde o saas-backend roda
 // ============================================================
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://saas-u3company.onrender.com';
 
 // Todas as rotas disponíveis no sistema
 const ALL_ROUTES = [
