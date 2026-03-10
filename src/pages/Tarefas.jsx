@@ -3,7 +3,7 @@ import { useAuth } from '../utils/auth';
 import { Plus, CheckCircle, Clock, Calendar, AlertCircle, PlayCircle, StopCircle, User, LayoutGrid, List, Flag, Tag as TagIcon } from 'lucide-react';
 
 const Tarefas = () => {
-    const { user, USERS } = useAuth();
+    const { user, usersList } = useAuth();
 
     const [tarefas, setTarefas] = useState(() => {
         const saved = localStorage.getItem('u3_tarefas');
@@ -22,11 +22,11 @@ const Tarefas = () => {
     const [clientes, setClientes] = useState(['Nenhum / Interno']);
 
     useEffect(() => {
-        const savedClients = JSON.parse(localStorage.getItem('u3_clients') || '[]');
+        const savedClients = JSON.parse(localStorage.getItem('u3_clients_v2') || '[]');
         if (savedClients.length > 0) {
             setClientes(['Nenhum / Interno', ...savedClients.map(c => c.name)]);
         } else {
-            setClientes(['Nenhum / Interno', 'AlphaTech Solutions', 'Imobiliária Prime', 'Construtora Silva']);
+            setClientes(['Nenhum / Interno']);
         }
     }, []);
 
@@ -453,7 +453,7 @@ const Tarefas = () => {
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label className="form-label">Atribuir para:</label>
                                     <select name="responsavel" className="form-control" required>
-                                        {USERS.filter(u => u.role !== 'cliente').map(u => (
+                                        {usersList.filter(u => u.role !== 'cliente').map(u => (
                                             <option key={u.id} value={u.name}>{u.name} ({u.role.toUpperCase()})</option>
                                         ))}
                                     </select>
@@ -525,7 +525,7 @@ const Tarefas = () => {
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label className="form-label">Responsável</label>
                                     <select name="responsavel" className="form-control" defaultValue={editTask.responsavel} required>
-                                        {USERS.filter(u => u.role !== 'cliente').map(u => (
+                                        {usersList.filter(u => u.role !== 'cliente').map(u => (
                                             <option key={u.id} value={u.name}>{u.name} ({u.role.toUpperCase()})</option>
                                         ))}
                                     </select>
