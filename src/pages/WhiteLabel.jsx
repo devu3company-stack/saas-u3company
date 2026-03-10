@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Layers, Plus, Copy, Palette, Globe, CheckCircle, Search, LayoutTemplate, MoreVertical, Shield } from 'lucide-react';
 import { useAuth } from '../utils/auth';
 
@@ -24,21 +24,30 @@ const WhiteLabel = () => {
         return getData('u3_agencies', JSON.stringify(initialMock));
     });
 
+    // Salva no storage sempre que agencies muda (sem setData na dependência para não causar loop)
+    const prevAgenciesRef = useRef(null);
     useEffect(() => {
-        setData('u3_agencies', agencies);
-    }, [agencies, setData]);
+        if (prevAgenciesRef.current !== agencies) {
+            prevAgenciesRef.current = agencies;
+            setData('u3_agencies', agencies);
+        }
+    });
 
+    // Simulador de Deploy: usa um ref para não criar timers duplicados
+    const deployingIdsRef = useRef(new Set());
     useEffect(() => {
-        // Simulador de Deploy: Após 5 segundos, qualquer agência "deploying" vira "ativo"
-        const deployTimers = agencies.filter(a => a.status === 'deploying').map(agency => {
-            return setTimeout(() => {
-                setAgencies(prev => prev.map(p => p.id === agency.id ? { ...p, status: 'ativo' } : p));
-                showToast(`✅ Servidor de ${agency.name} concluído e já está online!`);
-            }, 4000);
+        agencies.filter(a => a.status === 'deploying').forEach(agency => {
+            if (!deployingIdsRef.current.has(agency.id)) {
+                deployingIdsRef.current.add(agency.id);
+                setTimeout(() => {
+                    setAgencies(prev => prev.map(p => p.id === agency.id ? { ...p, status: 'ativo' } : p));
+                    deployingIdsRef.current.delete(agency.id);
+                    showToast(`✅ Servidor de ${agency.name} concluído e já está online!`);
+                }, 4000);
+            }
         });
-
-        return () => deployTimers.forEach(clearTimeout);
-    }, [agencies]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [agencies.length]);
 
     const handleCreateInstance = (e) => {
         e.preventDefault();
