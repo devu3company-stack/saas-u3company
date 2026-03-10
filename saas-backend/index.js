@@ -5,6 +5,7 @@ const axios = require('axios');
 const http = require('http');
 const { Server } = require('socket.io');
 const ioClient = require('socket.io-client');
+const db = require('./db');
 
 const app = express();
 app.use(cors());
@@ -152,3 +153,57 @@ const PORT = 3001;
 server.listen(PORT, () => {
     console.log(`🚀 Saas Bridge CRM rodando na porta ${PORT}`);
 });
+
+//==========================================================
+// DATABASE API - DADOS COMPARTILHADOS ENTRE USUARIOS
+//==========================================================
+
+// GET: Busca um dado pelo namespace ("shared" ou "tenant_ID") e pela chave
+app.get('/api/data/:namespace/:key', (req, res) => {
+    const { namespace, key } = req.params;
+    try {
+        let value;
+        if (namespace === 'shared') {
+            value = db.get(`shared.${key}`).value();
+        } else {
+            value = db.get(`tenants.${namespace}.${key}`).value();
+        }
+        res.json({ success: true, value: value !== undefined ? value : null });
+    } catch (e) {
+        res.json({ success: true, value: null });
+    }
+});
+
+// POST: Salva um dado pelo namespace e chave
+app.post('/api/data/:namespace/:key', (req, res) => {
+    const { namespace, key } = req.params;
+    const { value } = req.body;
+    try {
+        if (namespace === 'shared') {
+            db.set(`shared.${key}`, value).write();
+        } else {
+            // Garante que o namespace do tenant exista
+            if (!db.get(`tenants.${namespace}`).value()) {
+                db.set(`tenants.${namespace}`, {}).write();
+            }
+            db.set(`tenants.${namespace}.${key}`, value).write();
+        }
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+// GET: Lista todos os usuarios
+app.get('/api/users', (req, res) => {
+    const users = db.get('users').value();
+    res.json({ success: true, users });
+});
+
+// POST: Salva a lista completa de usuarios
+app.post('/api/users', (req, res) => {
+    const { users } = req.body;
+    db.set('users', users).write();
+    res.json({ success: true });
+});
+
