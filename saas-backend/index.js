@@ -11,6 +11,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health check para Railway
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
