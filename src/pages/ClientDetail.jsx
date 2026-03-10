@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FileText, Calendar, Lock, CheckSquare, Smile, Shield, ArrowLeft, BarChart2, Users, DollarSign, Clock, LayoutGrid, CheckCircle, PlayCircle, Plus, Map } from 'lucide-react';
+import { FileText, Calendar, Lock, CheckSquare, Smile, Shield, ArrowLeft, BarChart2, Users, DollarSign, Clock, LayoutGrid, CheckCircle, PlayCircle, Plus, Map, Palette, Upload, Trash2, Image } from 'lucide-react';
+import { useAuth } from '../utils/auth';
 
 const ClientDetail = () => {
     const { id } = useParams();
+    const { user } = useAuth();
+    const isDesigner = user?.role === 'designer';
     const [activeTab, setActiveTab] = useState('onboarding');
 
     // Onboarding Trail Tracker
@@ -33,8 +36,42 @@ const ClientDetail = () => {
     const [client, setClient] = useState(null);
     const [clientTasks, setClientTasks] = useState([]);
 
+    // Materiais do cliente
+    const [materiais, setMateriais] = useState(() => {
+        const saved = localStorage.getItem(`u3_materiais_${id}`);
+        return saved ? JSON.parse(saved) : { briefing: '', logo: null, assets: [] };
+    });
+
     useEffect(() => {
-        const clients = JSON.parse(localStorage.getItem('u3_clients') || '[]');
+        localStorage.setItem(`u3_materiais_${id}`, JSON.stringify(materiais));
+    }, [materiais, id]);
+
+    const handleUploadAsset = (e) => {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                setMateriais(prev => ({
+                    ...prev,
+                    assets: [...prev.assets, { name: file.name, data: ev.target.result, uploadedAt: new Date().toLocaleDateString('pt-BR') }]
+                }));
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const handleUploadLogo = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setMateriais(prev => ({ ...prev, logo: { name: file.name, data: ev.target.result } }));
+        };
+        reader.readAsDataURL(file);
+    };
+
+    useEffect(() => {
+        const clients = JSON.parse(localStorage.getItem('u3_clients_v2') || '[]');
         const found = clients.find(c => c.id.toString() === id);
         if (found) {
             setClient({
@@ -111,6 +148,7 @@ const ClientDetail = () => {
             <div className="tabs">
                 {[
                     { id: 'resumo', label: 'Resumo & Dashboard' },
+                    { id: 'materiais', label: 'Materiais & Briefing' },
                     { id: 'onboarding', label: 'Trilha de Onboarding' },
                     { id: 'crm', label: 'CRM & Funil' },
                     { id: 'midia', label: 'Mídia & Performance' },
@@ -135,10 +173,12 @@ const ClientDetail = () => {
                                 <div className="card-title">Início Contrato</div>
                                 <div className="card-value" style={{ fontSize: '1.5rem' }}>{client.start}</div>
                             </div>
-                            <div className="card">
-                                <div className="card-title">Mensalidade (MRR)</div>
-                                <div className="card-value" style={{ fontSize: '1.5rem', color: 'var(--accent-color)' }}>{client.mrr}</div>
-                            </div>
+                            {!isDesigner && (
+                                <div className="card">
+                                    <div className="card-title">Mensalidade (MRR)</div>
+                                    <div className="card-value" style={{ fontSize: '1.5rem', color: 'var(--accent-color)' }}>{client.mrr}</div>
+                                </div>
+                            )}
                             <div className="card">
                                 <div className="card-title">Satisfação (NPS)</div>
                                 <div className="card-value" style={{ fontSize: '1.5rem', color: 'var(--success)' }}>{client.nps} / 10</div>
@@ -243,6 +283,87 @@ const ClientDetail = () => {
                         <button className="btn btn-primary" style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
                             <Lock size={16} /> Desbloquear Cofre de {client.name}
                         </button>
+                    </div>
+                )}
+
+                {/* ABA MATERIAIS & BRIEFING */}
+                {activeTab === 'materiais' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        {/* Logo da Empresa */}
+                        <div className="card">
+                            <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Image size={18} /> Logotipo da Empresa
+                            </h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+                                {materiais.logo ? (
+                                    <div style={{ position: 'relative' }}>
+                                        <img src={materiais.logo.data} alt="Logo" style={{ width: 120, height: 120, objectFit: 'contain', borderRadius: 12, border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-tertiary)', padding: 8 }} />
+                                        <button onClick={() => setMateriais(prev => ({ ...prev, logo: null }))} style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', backgroundColor: 'var(--danger)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                    </div>
+                                ) : (
+                                    <div style={{ width: 120, height: 120, borderRadius: 12, border: '2px dashed var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: 12 }}>
+                                        Sem logo
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="btn btn-outline" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                        <Upload size={14} /> {materiais.logo ? 'Trocar Logo' : 'Enviar Logo'}
+                                        <input type="file" accept="image/*" onChange={handleUploadLogo} style={{ display: 'none' }} />
+                                    </label>
+                                    <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: 8 }}>PNG ou JPG, fundo transparente preferido</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Briefing */}
+                        <div className="card">
+                            <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Palette size={18} /> Briefing de Design
+                            </h3>
+                            <p className="text-muted" style={{ marginBottom: 12, fontSize: '0.85rem' }}>Cole o briefing aqui: cores da marca, fontes, tom de voz, referências visuais, etc.</p>
+                            <textarea
+                                className="form-control"
+                                rows="6"
+                                value={materiais.briefing}
+                                onChange={(e) => setMateriais(prev => ({ ...prev, briefing: e.target.value }))}
+                                placeholder="Ex: Cores primárias: #1a1a2e e #e94560. Fonte: Montserrat Bold para títulos, Inter para corpo. Tom de voz: moderno, jovem, direto..."
+                                style={{ resize: 'vertical' }}
+                            />
+                        </div>
+
+                        {/* Assets / Materiais */}
+                        <div className="card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                                    <FileText size={18} /> Materiais e Arquivos
+                                </h3>
+                                <label className="btn btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                    <Upload size={14} /> Enviar Arquivo
+                                    <input type="file" accept="image/*,.pdf" multiple onChange={handleUploadAsset} style={{ display: 'none' }} />
+                                </label>
+                            </div>
+
+                            {materiais.assets.length > 0 ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 16 }}>
+                                    {materiais.assets.map((asset, i) => (
+                                        <div key={i} style={{ position: 'relative', backgroundColor: 'var(--bg-tertiary)', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                            <img src={asset.data} alt={asset.name} onClick={() => window.open(asset.data, '_blank')} style={{ width: '100%', height: 120, objectFit: 'cover', cursor: 'pointer' }} />
+                                            <div style={{ padding: '8px 10px' }}>
+                                                <div style={{ fontSize: '0.7rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{asset.name}</div>
+                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Enviado em {asset.uploadedAt}</div>
+                                            </div>
+                                            <button onClick={() => setMateriais(prev => ({ ...prev, assets: prev.assets.filter((_, idx) => idx !== i) }))} style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', border: '2px dashed var(--border-color)', borderRadius: 12 }}>
+                                    <Upload size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+                                    <p>Nenhum material enviado ainda.</p>
+                                    <p style={{ fontSize: '0.8rem' }}>Envie logos, guias de marca, criativos, flyers...</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 

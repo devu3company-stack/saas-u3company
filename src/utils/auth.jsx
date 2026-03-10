@@ -28,7 +28,7 @@ const PERMISSIONS = {
         '/trafego', '/academy'
     ],
     designer: [
-        '/dashboard', '/tarefas', '/docs'
+        '/dashboard', '/tarefas', '/docs', '/clientes'
     ],
 };
 

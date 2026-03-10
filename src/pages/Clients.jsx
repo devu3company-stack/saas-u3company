@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus, Filter, Edit2, Trash2 } from 'lucide-react';
+import { useAuth } from '../utils/auth';
 
 const Clients = () => {
+    const { user } = useAuth();
+    const isDesigner = user?.role === 'designer';
     const location = useLocation();
     const [filter, setFilter] = useState('Todos');
     const [showModal, setShowModal] = useState(false);
@@ -117,7 +120,7 @@ const Clients = () => {
                                 <th>Empresa</th>
                                 <th>Contato</th>
                                 <th>Status</th>
-                                <th>Mensalidade</th>
+                                {!isDesigner && <th>Mensalidade</th>}
                                 <th>Responsável</th>
                                 <th>Ações</th>
                             </tr>
@@ -130,7 +133,7 @@ const Clients = () => {
                                     <td>
                                         <span className={`badge ${client.status}`}>{client.status.toUpperCase()}</span>
                                     </td>
-                                    <td>{client.mrr}</td>
+                                    {!isDesigner && <td>{client.mrr}</td>}
                                     <td>{client.responsavel}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
