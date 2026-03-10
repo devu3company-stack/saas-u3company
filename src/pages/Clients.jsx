@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Plus, Filter } from 'lucide-react';
+import { Plus, Filter, Edit2, Trash2 } from 'lucide-react';
 
 const Clients = () => {
     const location = useLocation();
     const [filter, setFilter] = useState('Todos');
     const [showModal, setShowModal] = useState(false);
+    const [editingClient, setEditingClient] = useState(null);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -24,19 +25,56 @@ const Clients = () => {
         localStorage.setItem('u3_clients_v2', JSON.stringify(clients));
     }, [clients]);
 
-    const handleCreateClient = (e) => {
+    const handleSaveClient = (e) => {
         e.preventDefault();
         const form = e.target;
-        const newClient = {
-            id: Date.now(),
-            name: form.empresa.value,
-            contato: form.contato.value,
-            status: 'ativo', // novo cliente entra ativo no onboarding
-            mrr: form.mrr.value,
-            responsavel: 'Admin' // padrão
-        };
-        setClients([newClient, ...clients]);
+
+        if (editingClient) {
+            // Atualizar cliente existente
+            const updatedClients = clients.map(c => {
+                if (c.id === editingClient.id) {
+                    return {
+                        ...c,
+                        name: form.empresa.value,
+                        contato: form.contato.value,
+                        status: form.status.value,
+                        mrr: form.mrr.value,
+                        responsavel: form.responsavel.value
+                    };
+                }
+                return c;
+            });
+            setClients(updatedClients);
+        } else {
+            // Criar novo
+            const newClient = {
+                id: Date.now(),
+                name: form.empresa.value,
+                contato: form.contato.value,
+                status: 'ativo',
+                mrr: form.mrr.value,
+                responsavel: 'Admin'
+            };
+            setClients([newClient, ...clients]);
+        }
+
+        closeModal();
+    };
+
+    const handleEdit = (client) => {
+        setEditingClient(client);
+        setShowModal(true);
+    };
+
+    const handleDelete = (id) => {
+        if (window.confirm('Certeza que deseja excluir este cliente definitivamente? A ação não pode ser desfeita.')) {
+            setClients(clients.filter(c => c.id !== id));
+        }
+    };
+
+    const closeModal = () => {
         setShowModal(false);
+        setEditingClient(null);
     };
 
     const filtered = filter === 'Todos' ? clients : clients.filter(c => c.status === filter.toLowerCase());
@@ -49,7 +87,7 @@ const Clients = () => {
                     <p className="text-muted">Gerencie a carteira de clientes</p>
                 </div>
                 <div style={{ display: 'flex', gap: 16 }}>
-                    <button className="btn btn-primary" onClick={() => setShowModal(true)}><Plus size={16} /> Novo Cliente</button>
+                    <button className="btn btn-primary" onClick={() => { setEditingClient(null); setShowModal(true); }}><Plus size={16} /> Novo Cliente</button>
                 </div>
             </div>
 
@@ -95,9 +133,17 @@ const Clients = () => {
                                     <td>{client.mrr}</td>
                                     <td>{client.responsavel}</td>
                                     <td>
-                                        <Link to={`/clientes/${client.id}`} className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                                            Visão 360°
-                                        </Link>
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                            <Link to={`/clientes/${client.id}`} className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                                                Visão 360°
+                                            </Link>
+                                            <button className="btn btn-outline" style={{ padding: '6px' }} onClick={() => handleEdit(client)} title="Editar Cliente">
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button className="btn btn-outline" style={{ padding: '6px', color: 'var(--danger)', borderColor: 'transparent' }} onClick={() => handleDelete(client.id)} title="Excluir">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -105,7 +151,7 @@ const Clients = () => {
                     </table>
                 </div>
             </div>
-            {/* Modal Novo Cliente */}
+            {/* Modal Novo/Editar Cliente */}
             {showModal && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -113,29 +159,48 @@ const Clients = () => {
                     justifyContent: 'center', zIndex: 1000
                 }}>
                     <div className="card" style={{ width: '100%', maxWidth: 500 }}>
-                        <h3 style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border-color)' }}>Onboarding de Novo Cliente</h3>
-                        <form onSubmit={handleCreateClient}>
+                        <h3 style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border-color)' }}>
+                            {editingClient ? 'Editar Cliente' : 'Onboarding de Novo Cliente'}
+                        </h3>
+                        <form onSubmit={handleSaveClient}>
                             <div className="form-group">
                                 <label className="form-label">Nome da Empresa</label>
-                                <input name="empresa" type="text" className="form-control" required placeholder="Ex: Mega Empreendimentos" />
+                                <input name="empresa" type="text" className="form-control" required defaultValue={editingClient?.name} placeholder="Ex: Mega Empreendimentos" />
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Pessoa de Contato</label>
-                                <input name="contato" type="text" className="form-control" required placeholder="Ex: Ricardo (Diretor)" />
+                                <input name="contato" type="text" className="form-control" required defaultValue={editingClient?.contato} placeholder="Ex: Ricardo (Diretor)" />
                             </div>
+
                             <div className="responsive-grid-2">
                                 <div className="form-group">
-                                    <label className="form-label">WhatsApp</label>
-                                    <input name="whatsapp" type="text" className="form-control" required placeholder="(11) 99999-9999" />
+                                    <label className="form-label">Mensalidade (MRR)</label>
+                                    <input name="mrr" type="text" className="form-control" required defaultValue={editingClient?.mrr} placeholder="R$ 3.500" />
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label">Mensalidade (MRR Target)</label>
-                                    <input name="mrr" type="text" className="form-control" required placeholder="R$ 3.500" />
+                                    <label className="form-label">Status</label>
+                                    {editingClient ? (
+                                        <select name="status" className="form-control" defaultValue={editingClient.status}>
+                                            <option value="ativo">Ativo</option>
+                                            <option value="pausado">Pausado</option>
+                                            <option value="cancelado">Cancelado</option>
+                                        </select>
+                                    ) : (
+                                        <input type="text" className="form-control" value="Ativo" disabled />
+                                    )}
                                 </div>
                             </div>
+
+                            {editingClient && (
+                                <div className="form-group">
+                                    <label className="form-label">Responsável da Conta</label>
+                                    <input name="responsavel" type="text" className="form-control" required defaultValue={editingClient?.responsavel} />
+                                </div>
+                            )}
+
                             <div style={{ display: 'flex', gap: 12, marginTop: 32, justifyContent: 'flex-end' }}>
-                                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Salvar e Iniciar Onboarding</button>
+                                <button type="button" className="btn btn-outline" onClick={closeModal}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary">{editingClient ? 'Salvar Alterações' : 'Salvar e Iniciar Onboarding'}</button>
                             </div>
                         </form>
                     </div>
