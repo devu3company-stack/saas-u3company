@@ -56,102 +56,94 @@ async function searchLeads({ niche, city, state, limit = 20, extraKeywords = '' 
 
         console.log('Scrolling down to extract leads...');
 
-        // Loop to scroll and extract
-        while (leads.length < limit) {
-            // Evaluates inside the browser to get all current visible leads' data
-            const extracted = await page.evaluate(() => {
-                const results = [];
-                // 'hfpxzc' is usually the class for the main clickable link of a place card
-                const cards = Array.from(document.querySelectorAll('a.hfpxzc'));
+        console.log('Scrolling down and extracting detailed leads...');
 
-                for (let card of cards) {
-                    // Pulo do Gato: Checar se o card pertence a anúncios pagos do maps (Patrocinado/Ads)
-                    let isSponsored = false;
-                    let parent = card.parentElement;
-                    for (let i = 0; i < 6; i++) {
-                        if (parent) {
-                            const textCtx = parent.innerText || '';
-                            if (textCtx.includes('Patrocinado') || textCtx.includes('Sponsored') || textCtx.includes('Ad')) {
-                                isSponsored = true;
-                                break;
-                            }
-                            parent = parent.parentElement;
-                        }
-                    }
+        const maxScrolls = 15;
+        let scrolls = 0;
 
-                    if (!isSponsored) {
-                        const url = card.href;
-                        // The label usually contains "Name · Rating · Reviews · Type · ..."
-                        const label = card.getAttribute('aria-label') || '';
-
-                        if (label) {
-                            results.push({ url, label });
-                        }
-                    }
-                }
-                return results;
-            });
-
-            // Process new extracted items
-            for (let item of extracted) {
-                if (!itemsExtracted.has(item.url) && leads.length < limit) {
-                    itemsExtracted.add(item.url);
-
-                    // Basic parsing of the aria-label string (since Google packs info in it)
-                    // Note: full scraping involves clicking each card to get phone/website,
-                    // but that is very slow. We grab the minimal available first.
-                    // To make it truly valuable, let's open each link sequentially quickly, OR just return the maps URL for them to inspect.
-                    // For a free reliable script, let's extract what we can without clicking all of them to prevent IP block.
-
-                    leads.push({
-                        lead_id: Buffer.from(item.url).toString('base64').substring(0, 15),
-                        niche: niche,
-                        nome: item.label, // Includes extra info, we leave it raw as name here for simplicity
-                        telefone: 'Ver link abaixo', // Phone often requires clicking in the UI
-                        whatsapp_link: '',
-                        cidade: city,
-                        estado: state,
-                        endereco: 'Local listado no mapa',
-                        site: '',
-                        maps_url: item.url,
-                        rating: '',
-                        reviews: '',
-                        anuncio_status: 'não identificado',
-                        ranking_maps: leads.length + 1,
-                        top3_maps: leads.length < 3 ? 'sim' : 'não',
-                        data_coleta: new Date().toISOString(),
-                        sync_status: 'novo',
-                        saas_id: '',
-                        obs: 'Encontrado via Scraper Gratuito'
-                    });
-                }
-            }
-
-            if (leads.length >= limit) break;
-
-            // Scroll down the feed container
-            const previousHeight = await page.evaluate(() => {
+        // Function to scroll the container
+        const scrollContainer = async () => {
+            await page.evaluate(() => {
                 const feed = document.querySelector('div[role="feed"]');
-                if (feed) {
-                    const lastHeight = feed.scrollHeight;
-                    feed.scrollTo(0, feed.scrollHeight);
-                    return lastHeight;
+                if (feed) feed.scrollTo(0, feed.scrollHeight);
+            });
+            await delay(2000);
+        };
+
+        // Scroll a bit to load elements
+        while (scrolls < maxScrolls) {
+            const elements = await page.$$('a.hfpxzc');
+            if (elements.length >= limit) break;
+            await scrollContainer();
+            scrolls++;
+        }
+
+        const elements = await page.$$('a.hfpxzc');
+
+        for (let i = 0; i < elements.length && leads.length < limit; i++) {
+            const el = elements[i];
+
+            // Skip ads
+            const isAd = await page.evaluate(el => {
+                let parent = el.parentElement;
+                for (let j = 0; j < 6; j++) {
+                    if (parent) {
+                        const textCtx = parent.innerText || '';
+                        if (textCtx.includes('Patrocinado') || textCtx.includes('Sponsored') || textCtx.includes('Ad')) {
+                            return true;
+                        }
+                        parent = parent.parentElement;
+                    }
                 }
-                return 0;
-            });
+                return false;
+            }, el);
 
-            await delay(2500); // wait for new items to load
+            if (isAd) continue;
 
-            // Check if end of list is reached
-            const currentHeight = await page.evaluate(() => {
-                const feed = document.querySelector('div[role="feed"]');
-                return feed ? feed.scrollHeight : 0;
-            });
+            try {
+                // Click the card
+                await el.evaluate(b => b.click());
+                await delay(2000); // wait for panel to slide in
 
-            if (previousHeight === currentHeight) {
-                // Try scrolling one more time or break
-                console.log('End of list reached or Google requested captcha.');
-                break;
+                // Extract detailed data
+                const details = await page.evaluate(() => {
+                    // The h1 tag usually contains the title
+                    const titleEl = document.querySelector('h1.DUwDvf');
+                    const title = titleEl ? titleEl.innerText : 'Sem Nome';
+
+                    // Address
+                    const addressBtn = document.querySelector('button[data-tooltip="Copiar endereço"], button[data-item-id="address"]');
+                    const address = addressBtn ? addressBtn.innerText : '';
+
+                    // Phone
+                    const phoneBtn = document.querySelector('button[data-tooltip="Copiar número de telefone"], button[data-item-id^="phone:tel:"]');
+                    const phone = phoneBtn ? phoneBtn.innerText : '';
+
+                    const websiteBtn = document.querySelector('a[data-tooltip="Abrir website"], a[data-item-id="authority"]');
+                    const website = websiteBtn ? websiteBtn.href : '';
+
+                    return { title, address, phone, website };
+                });
+
+                const url = await el.evaluate(b => b.href);
+
+                leads.push({
+                    id: Date.now() + i,
+                    niche: niche,
+                    nome: details.title,
+                    telefone: details.phone,
+                    whatsapp_link: createWhatsAppLink(details.phone) || details.phone,
+                    cidade: city,
+                    estado: state,
+                    endereco: details.address || 'Local listado no mapa',
+                    site: details.website,
+                    maps_url: url
+                });
+
+                console.log(`Extracted: ${details.title} - ${details.phone}`);
+
+            } catch (e) {
+                console.log('Error extracting individual card', e);
             }
         }
 
