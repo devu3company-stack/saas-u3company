@@ -24,6 +24,8 @@ import Prospecting from './pages/Prospecting';
 import MetaTracking from './pages/MetaTracking';
 import UsersPage from './pages/UsersPage';
 
+import NpsSurvey from './pages/NpsSurvey';
+
 function App() {
   useEffect(() => {
     initMetaPixel(); // Dispara PageView init
@@ -34,6 +36,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/nps/:id" element={<NpsSurvey />} />
 
           <Route path="/" element={<DashboardLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />

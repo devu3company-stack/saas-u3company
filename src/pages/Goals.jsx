@@ -18,7 +18,9 @@ const Goals = () => {
             hallDesc: 'Nenhum destaque ainda.',
             hallPhoto: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop'
         };
-        return getData('u3_goals', JSON.stringify(emptyState));
+        const saved = getData('u3_goals', JSON.stringify(emptyState));
+        if (!saved || typeof saved !== 'object' || Object.keys(saved).length === 0) return emptyState;
+        return { ...emptyState, ...saved };
     });
 
     const updateGoals = (newGoals) => {

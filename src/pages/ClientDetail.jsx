@@ -12,13 +12,15 @@ const ClientDetail = () => {
     // Onboarding Trail Tracker
     // Onboarding Trail Tracker
     const [onboardingSteps, setOnboardingSteps] = useState(() => {
-        return getData(`u3_onboarding_${id}`, JSON.stringify([
+        const defaultSteps = [
             { id: 1, title: 'Reunião de Kickoff', desc: 'Apresentação da equipe e metas', done: false },
             { id: 2, title: 'Ativos Digitais (BM, Ads)', desc: 'Conseguir acessos ao Meta e Google Ads', done: false },
             { id: 3, title: 'Criação de Criativos / Copy', desc: 'Produzir peças para a campanha', done: false },
             { id: 4, title: 'Aprovação Final com Cliente', desc: 'Validar assets', done: false },
             { id: 5, title: 'Ativação das Campanhas', desc: 'Campanhas no ar', done: false }
-        ]));
+        ];
+        const saved = getData(`u3_onboarding_${id}`, JSON.stringify(defaultSteps));
+        return (Array.isArray(saved) && saved.length > 0) ? saved : defaultSteps;
     });
 
     useEffect(() => {
@@ -37,7 +39,10 @@ const ClientDetail = () => {
 
     // Materiais do cliente
     const [materiais, setMateriais] = useState(() => {
-        return getData(`u3_materiais_${id}`, JSON.stringify({ briefing: '', logo: null, assets: [] }));
+        const defaultMateriais = { briefing: '', logo: null, assets: [] };
+        const saved = getData(`u3_materiais_${id}`, JSON.stringify(defaultMateriais));
+        if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return defaultMateriais;
+        return { ...defaultMateriais, ...saved };
     });
 
     useEffect(() => {

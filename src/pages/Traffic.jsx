@@ -7,10 +7,10 @@ const Traffic = () => {
     const { getData, setData } = useAuth();
     const fileInputRef = useRef(null);
     const [isImporting, setIsImporting] = useState(false);
-    const [selectedClient, setSelectedClient] = useState('AlphaTech Solutions');
+    const [selectedClient, setSelectedClient] = useState('');
     const [objetivo, setObjetivo] = useState('Geração de Leads');
 
-    const clients = getData('u3_clients', '[]');
+    const clients = getData('u3_clients_v2', '[]') || [];
 
     // Dados Dinâmicos usando State para permitir a simulação do upload
     const [dashboardData, setDashboardData] = useState(() => {
@@ -138,12 +138,10 @@ const Traffic = () => {
                             onChange={(e) => setSelectedClient(e.target.value)}
                             style={{ minWidth: 200 }}
                         >
+                            <option value="">Selecione um cliente</option>
                             {clients.map(c => (
                                 <option key={c.id} value={c.name}>{c.name}</option>
                             ))}
-                            {clients.length === 0 && (
-                                <option disabled>Nenhum cliente cadastrado</option>
-                            )}
                         </select>
                         <select
                             className="form-control"
