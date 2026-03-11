@@ -5,12 +5,7 @@ import { useAuth } from '../utils/auth';
 const Leads = () => {
     const { getData, setData } = useAuth();
     const [pipeline, setPipeline] = useState(() => {
-        const initialMock = [
-            { id: 1, name: 'Marcos Silva', origem: 'Meta Ads', campanha: 'Black Friday', status: 'Novo', updatedAt: Date.now() - (3 * 24 * 60 * 60 * 1000), cardColor: '#ffffff', comentarios: '' },
-            { id: 2, name: 'Juliana Costa', origem: 'Google Search', campanha: 'Lead Gen', status: 'Diagnóstico', updatedAt: Date.now() - (1000 * 60 * 60), cardColor: '#ffffff', comentarios: 'Precisa ligar de tarde' },
-            { id: 3, name: 'Roberto Santos', origem: 'Site Orgânico', campanha: '-', status: 'Contato', updatedAt: Date.now() - (36 * 60 * 60 * 1000), cardColor: '#ffffff', comentarios: '' }
-        ];
-        return getData('u3_leads', JSON.stringify(initialMock));
+        return getData('u3_leads', '[]');
     });
 
     const [showWebhook, setShowWebhook] = useState(false);

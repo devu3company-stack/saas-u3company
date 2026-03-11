@@ -6,12 +6,7 @@ const Financeiro = () => {
     const { getData, setData } = useAuth();
 
     const [custos, setCustos] = useState(() => {
-        const initialMock = [
-            { id: 1, descricao: 'Google Workspace', valorNum: 145.00, data: '20/02/2026', categoria: 'Software' },
-            { id: 2, descricao: 'Meta Ads (Tráfego U3)', valorNum: 1500.00, data: '18/02/2026', categoria: 'Marketing' },
-            { id: 3, descricao: 'Vercel Pro', valorNum: 100.00, data: '15/02/2026', categoria: 'Infraestrutura' }
-        ];
-        return getData('u3_custos', JSON.stringify(initialMock));
+        return getData('u3_custos', '[]');
     });
 
     const [caixa, setCaixa] = useState(() => {
@@ -21,11 +16,7 @@ const Financeiro = () => {
     const [mrrAtual, setMrrAtual] = useState(0); // Exemplo fixo ou pega do localStorage
 
     const [inadimplentes, setInadimplentes] = useState(() => {
-        const initialMock = [
-            { id: 1, cliente: 'AlphaTech Solutions', valor: 'R$ 1.250,00', vencimento: '10/02/2026', status: 'Atrasado (11 dias)', telefone: '(11) 98765-4321' },
-            { id: 2, cliente: 'Clínica Sorriso', valor: 'R$ 800,00', vencimento: '05/02/2026', status: 'Atrasado (16 dias)', telefone: '(19) 91234-5678' }
-        ];
-        return getData('u3_inadimplentes', JSON.stringify(initialMock));
+        return getData('u3_inadimplentes', '[]');
     });
 
     const [showCustoModal, setShowCustoModal] = useState(false);

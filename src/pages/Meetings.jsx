@@ -19,12 +19,7 @@ const Meetings = () => {
     });
 
     const [meetings, setMeetings] = useState(() => {
-        const initialMock = [
-            { id: 1, date: '2026-02-21', timeStart: '14:30', client: 'Construtora Silva', title: 'Alinhamento', platform: 'Google Meet', details: '', meetLink: 'https://meet.google.com/abc-def-ghi' },
-            { id: 2, date: '2026-02-22', timeStart: '10:00', client: 'Dental Care Clínica', title: 'Apresentação Diagnóstico', platform: 'Zoom', details: '', meetLink: 'https://zoom.us/j/123456789' },
-            { id: 3, date: '2026-02-22', timeStart: '16:00', client: 'Boutique Fashion', title: 'Onboarding', platform: 'Google Meet', details: '', meetLink: '' }
-        ];
-        return getData('u3_meetings', JSON.stringify(initialMock));
+        return getData('u3_meetings', '[]');
     });
 
     // PERSISTÊNCIA MANUAL

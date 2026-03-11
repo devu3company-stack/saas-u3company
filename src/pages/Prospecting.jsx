@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, Search, UserPlus, Trash2, CheckCircle, Database } from 'lucide-react';
+import { Upload, FileText, Search, UserPlus, Trash2, CheckCircle, Database, Bot, Zap, MapPin } from 'lucide-react';
 import Papa from 'papaparse';
 import { useAuth } from '../utils/auth';
 
@@ -9,11 +9,13 @@ const Prospecting = () => {
     const [fileName, setFileName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [toast, setToast] = useState(null);
+    const [scraping, setScraping] = useState(false);
+    const [scrapeForm, setScrapeForm] = useState({ niche: '', city: '', state: '', limit: 20 });
     const fileInputRef = useRef(null);
 
     const showToast = (msg) => {
         setToast(msg);
-        setTimeout(() => setToast(null), 3000);
+        setTimeout(() => setToast(null), 4000);
     };
 
     const handleFileUpload = (e) => {
@@ -35,13 +37,55 @@ const Prospecting = () => {
                     selecionado: false
                 }));
 
-                setLeads(parsedData);
+                setLeads(prev => [...parsedData, ...prev]);
                 showToast(`✅ ${parsedData.length} contatos lidos com sucesso!`);
             },
             error: (err) => {
                 showToast(`❌ Erro ao ler o arquivo: ${err.message}`);
             }
         });
+    };
+
+    const handleScrape = async () => {
+        if (!scrapeForm.niche || !scrapeForm.city || !scrapeForm.state) {
+            showToast('⚠️ Preencha nicho, cidade e estado para iniciar a extração.');
+            return;
+        }
+        setScraping(true);
+        showToast('⏳ Iniciando robô extrator via API (isso pode levar alguns minutos)...');
+        try {
+            const API_BASE = import.meta.env.VITE_API_BASE || 'https://saas-u3company.onrender.com';
+            const resp = await fetch(`${API_BASE}/api/extract-leads`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...scrapeForm, limit: Number(scrapeForm.limit) })
+            });
+
+            if (!resp.ok) {
+                throw new Error('Servidor retornou erro.');
+            }
+
+            const data = await resp.json();
+            if (data.leads && data.leads.length > 0) {
+                const newLeads = data.leads.map((l, index) => ({
+                    id: Date.now() + index,
+                    nome: l.nome || 'Empresa Sem Nome',
+                    telefone: l.telefone === 'Ver link abaixo' ? '' : (l.telefone || l.whatsapp_link || ''),
+                    endereco: l.endereco || `${l.cidade} - ${l.estado}`,
+                    site: l.maps_url || '',
+                    selecionado: false
+                }));
+
+                setLeads(prev => [...newLeads, ...prev]);
+                showToast(`✅ ${newLeads.length} leads extraídos no Google e adicionados à lista!`);
+            } else {
+                showToast('❌ Nenhum lead encontrado com estes parâmetros.');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast(`❌ Falha de Conexão: Certifique-se que a API do Lead Extractor (Node) está rodando na porta 3000.`);
+        }
+        setScraping(false);
     };
 
     const toggleSelect = (id) => {
@@ -56,7 +100,7 @@ const Prospecting = () => {
     const importToCRM = () => {
         const selectedLeads = leads.filter(l => l.selecionado);
         if (selectedLeads.length === 0) {
-            alert("Selecione pelo menos um contato para importar.");
+            showToast("⚠️ Selecione pelo menos um contato para importar.");
             return;
         }
 
@@ -68,7 +112,7 @@ const Prospecting = () => {
             telefone: lead.telefone,
             endereco: lead.endereco,
             status: 'Lead Frio',
-            plano: lead.site ? `Site: ${lead.site}` : 'Prospecção Google',
+            plano: lead.site ? `Site: ${lead.site}` : 'Prospecção API',
             origem: 'Importação Extrator'
         }));
 
@@ -80,16 +124,15 @@ const Prospecting = () => {
             id: Date.now() + index,
             name: lead.nome,
             origem: 'Extrator API',
-            campanha: lead.telefone, // Guardando o telefone no espaco de campanha
-            status: 'Novo', // Primeira Coluna do Funil
+            campanha: lead.telefone,
+            status: 'Novo',
             updatedAt: Date.now()
         }));
 
         setData('u3_leads', [...currentPipeline, ...newLeadsPipeline]);
 
-        // Remove os importados da lista atual
         setLeads(prev => prev.filter(l => !l.selecionado));
-        showToast(`🚀 ${selectedLeads.length} leads importados para o CRM e Funil!`);
+        showToast(`🚀 ${selectedLeads.length} leads exportados com sucesso para CRM e Funil!`);
     };
 
     const filteredLeads = leads.filter(lead =>
@@ -113,8 +156,8 @@ const Prospecting = () => {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
                 <div>
-                    <h2 style={{ marginBottom: 8 }}>Prospecção (Extrator Google)</h2>
-                    <p className="text-muted">Faça upload da planilha .csv gerada pelo seu robô e transforme os dados em novos Leads no CRM.</p>
+                    <h2 style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>Prospecção (Extrator Google) <Zap color="var(--accent-color)" size={24} /></h2>
+                    <p className="text-muted">Utilize o robô integrado para extrair leads do Google Maps automaticamente ou faça upload manual de um dataset CSV.</p>
                 </div>
                 {leads.length > 0 && (
                     <button className="btn btn-primary" onClick={importToCRM} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -123,29 +166,74 @@ const Prospecting = () => {
                 )}
             </div>
 
-            <div className="card" style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', borderStyle: 'dashed', borderWidth: 2, borderColor: 'var(--border-color)', backgroundColor: 'transparent' }}>
-                <Database size={48} color="var(--text-muted)" style={{ marginBottom: 16 }} />
-                <h3 style={{ marginBottom: 8 }}>Adicionar Planilha (.CSV)</h3>
-                <p className="text-muted" style={{ textAlign: 'center', maxWidth: 400, marginBottom: 24 }}>
-                    O sistema lerá colunas como Nome, Telefone, Endereço e Site para organizar a tabela perfeitamente.
-                </p>
-                <input
-                    type="file"
-                    accept=".csv"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    style={{ display: 'none' }}
-                />
-                <button className="btn btn-outline" onClick={() => fileInputRef.current.click()} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Upload size={16} /> Escolher Arquivo CSV
-                </button>
-                {fileName && <p style={{ marginTop: 12, fontSize: '0.85rem', color: 'var(--accent-color)' }}>Arquivo lido: {fileName}</p>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+                {/* Extrator via API */}
+                <div className="card" style={{ display: 'flex', flexDirection: 'column', padding: 24, border: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                        <div style={{ backgroundColor: 'rgba(0, 208, 132, 0.1)', padding: 12, borderRadius: '50%' }}>
+                            <Bot size={28} color="var(--accent-color)" />
+                        </div>
+                        <div>
+                            <h3 style={{ marginBottom: 4 }}>Extrator Automático</h3>
+                            <div className="text-muted" style={{ fontSize: '0.85rem' }}>Busque leads no Google em tempo real.</div>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+                            <div>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Nicho ou Palavra-Chave</label>
+                                <input type="text" className="form-control" placeholder="Ex: Dentistas, Imobiliárias" value={scrapeForm.niche} onChange={e => setScrapeForm({ ...scrapeForm, niche: e.target.value })} disabled={scraping} />
+                            </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <div>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Cidade</label>
+                                <input type="text" className="form-control" placeholder="Ex: São Paulo" value={scrapeForm.city} onChange={e => setScrapeForm({ ...scrapeForm, city: e.target.value })} disabled={scraping} />
+                            </div>
+                            <div>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Estado (UF)</label>
+                                <input type="text" className="form-control" placeholder="Ex: SP" value={scrapeForm.state} onChange={e => setScrapeForm({ ...scrapeForm, state: e.target.value })} disabled={scraping} maxLength={2} style={{ textTransform: 'uppercase' }} />
+                            </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+                            <div>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Quantidade a buscar</label>
+                                <input type="number" className="form-control" placeholder="Ex: 20" value={scrapeForm.limit} onChange={e => setScrapeForm({ ...scrapeForm, limit: e.target.value })} disabled={scraping} />
+                            </div>
+                        </div>
+
+                        <button className="btn btn-primary" onClick={handleScrape} disabled={scraping} style={{ marginTop: 8, display: 'flex', justifyContent: 'center', gap: 8 }}>
+                            {scraping ? <><Bot className="rotating" size={18} /> Extraindo, pode demorar...</> : <><Search size={18} /> Iniciar Extração</>}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Upload CSV */}
+                <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', borderStyle: 'dashed', borderWidth: 2, borderColor: 'var(--border-color)', backgroundColor: 'transparent' }}>
+                    <Database size={48} color="var(--text-muted)" style={{ marginBottom: 16 }} />
+                    <h3 style={{ marginBottom: 8 }}>Adicionar Planilha (.CSV)</h3>
+                    <p className="text-muted" style={{ textAlign: 'center', maxWidth: 350, marginBottom: 24, fontSize: '0.9rem' }}>
+                        Suba contatos da sua base fria. O sistema lerá Nome, Telefone e Endereço.
+                    </p>
+                    <input
+                        type="file"
+                        accept=".csv"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        style={{ display: 'none' }}
+                    />
+                    <button className="btn btn-outline" onClick={() => fileInputRef.current.click()} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Upload size={16} /> Escolher Arquivo CSV
+                    </button>
+                    {fileName && <p style={{ marginTop: 12, fontSize: '0.85rem', color: 'var(--accent-color)' }}>Lido: {fileName}</p>}
+                </div>
             </div>
 
             {leads.length > 0 && (
                 <div className="card">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                        <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={20} color="var(--accent-color)" /> Resultados Extraídos ({leads.length})</h3>
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={20} color="var(--accent-color)" /> Fila de Contatos Extraídos ({leads.length})</h3>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, padding: '8px 12px', width: 300 }}>
                             <Search size={16} color="var(--text-muted)" />
                             <input type="text" placeholder="Buscar empresa ou telefone..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ border: 'none', background: 'none', color: 'var(--text-main)', outline: 'none', width: '100%', fontFamily: 'inherit' }} />
@@ -159,10 +247,10 @@ const Prospecting = () => {
                                     <th style={{ padding: '12px 16px', width: 40 }}>
                                         <input type="checkbox" onChange={selectAll} checked={leads.length > 0 && leads.every(l => l.selecionado)} style={{ accentColor: 'var(--accent-color)' }} />
                                     </th>
-                                    <th style={{ padding: '12px 16px' }}>Nome/Empresa</th>
+                                    <th style={{ padding: '12px 16px' }}>Nome / Empresa</th>
                                     <th style={{ padding: '12px 16px' }}>Telefone</th>
-                                    <th style={{ padding: '12px 16px' }}>Endereço</th>
-                                    <th style={{ padding: '12px 16px' }}>Site</th>
+                                    <th style={{ padding: '12px 16px' }}>Localidade</th>
+                                    <th style={{ padding: '12px 16px' }}>Site (Maps URL)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -173,9 +261,12 @@ const Prospecting = () => {
                                         </td>
                                         <td style={{ padding: '12px 16px', fontWeight: 600 }}>{lead.nome}</td>
                                         <td style={{ padding: '12px 16px' }}>{lead.telefone || '-'}</td>
-                                        <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '0.8rem', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={lead.endereco}>{lead.endereco || '-'}</td>
+                                        <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '0.8rem', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={lead.endereco}>
+                                            <MapPin size={12} style={{ marginRight: 4, display: 'inline-block' }} />
+                                            {lead.endereco || '-'}
+                                        </td>
                                         <td style={{ padding: '12px 16px' }}>
-                                            {lead.site ? <a href={lead.site.startsWith('http') ? lead.site : `https://${lead.site}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-color)', textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}>{lead.site}</a> : '-'}
+                                            {lead.site ? <a href={lead.site.startsWith('http') ? lead.site : `https://${lead.site}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.8rem' }} onClick={(e) => e.stopPropagation()}>Maps Link</a> : '-'}
                                         </td>
                                     </tr>
                                 ))}

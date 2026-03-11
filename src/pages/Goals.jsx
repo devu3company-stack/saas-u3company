@@ -8,17 +8,17 @@ const Goals = () => {
     const currentMonth = today.toLocaleString('pt-BR', { month: 'long' });
     const [modalOpen, setModalOpen] = useState(false);
     const [goalsConfig, setGoalsConfig] = useState(() => {
-        const initialMock = {
-            goal: 50000,
-            ticket: 2500,
-            metaStart: 10000,
-            metaPro: 30000,
-            metaDiamond: 50000,
-            hallName: 'Carlos Eduardo',
-            hallDesc: 'Maior taxa de fechamento da semana e +3 novos clientes retidos.',
+        const emptyState = {
+            goal: 0,
+            ticket: 0,
+            metaStart: 0,
+            metaPro: 0,
+            metaDiamond: 0,
+            hallName: '-',
+            hallDesc: 'Nenhum destaque ainda.',
             hallPhoto: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop'
         };
-        return getData('u3_goals', JSON.stringify(initialMock));
+        return getData('u3_goals', JSON.stringify(emptyState));
     });
 
     const updateGoals = (newGoals) => {

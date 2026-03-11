@@ -6,12 +6,7 @@ const Tarefas = () => {
     const { user, usersList, getData, setData } = useAuth();
 
     const [tarefas, setTarefas] = useState(() => {
-        const initialMock = [
-            { id: 1, titulo: 'Ligar para Lead (Imobiliária)', descricao: 'Entrar em contato para fechar proposta final.', cliente: 'Imobiliária Prime', responsavel: 'SDR U3', dataEntrega: '2026-02-21', status: 'pendente', tempoExecucao: 0, iniciadaEm: null, prioridade: 'alta', tags: ['Vendas', 'Call'], cardColor: '#ffffff', referencias: '', anexos: [] },
-            { id: 2, titulo: 'Ajustar Campanha Meta Ads', descricao: 'Otimizar o custo por lead (CPL)', cliente: 'AlphaTech Solutions', responsavel: 'GESTOR U3', dataEntrega: '2026-02-22', status: 'em_andamento', tempoExecucao: 1540, iniciadaEm: Date.now() - 1540000, prioridade: 'urgente', tags: ['Marketing', 'Ads'], cardColor: '#ffcccc', referencias: 'Ver drive de criativos', anexos: [] },
-            { id: 3, titulo: 'Reunião Kickoff AlphaTech', descricao: 'Apresentar cronograma do projeto', cliente: 'AlphaTech Solutions', responsavel: 'CEO U3', dataEntrega: '2026-02-20', status: 'concluida', tempoExecucao: 3600, iniciadaEm: null, prioridade: 'normal', tags: ['Reunião', 'Onboarding'], cardColor: '#ccffcc', referencias: '', anexos: [] }
-        ];
-        return getData('u3_tarefas', JSON.stringify(initialMock));
+        return getData('u3_tarefas', '[]');
     });
 
     // PERSISTÊNCIA MANUAL

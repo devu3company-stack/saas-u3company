@@ -6,6 +6,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const ioClient = require('socket.io-client');
 const db = require('./db');
+const { searchLeads } = require('./services/puppeteerScraper');
 
 const app = express();
 app.use(cors());
@@ -208,5 +209,34 @@ app.post('/api/users', (req, res) => {
     const { users } = req.body;
     db.set('users', users).write();
     res.json({ success: true });
+});
+
+//==========================================================
+// ROTAS DE EXTRAÇÃO DE LEADS
+//==========================================================
+app.post('/api/extract-leads', async (req, res) => {
+    try {
+        const { niche, city, state, radius, limit, extraKeywords } = req.body;
+
+        if (!niche || !city || !state) {
+            return res.status(400).json({ error: 'Niche, city and state are required.' });
+        }
+
+        console.log(`Starting extraction for ${niche} in ${city} - ${state}...`);
+
+        // Fetch leads from Google Places API
+        const leads = await searchLeads({ niche, city, state, radius, limit, extraKeywords });
+
+        console.log(`Extraction finished. Found ${leads.length} leads.`);
+
+        res.json({
+            success: true,
+            totalFound: leads.length,
+            leads
+        });
+    } catch (error) {
+        console.error('Error during extraction process:', error);
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    }
 });
 

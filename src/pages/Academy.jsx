@@ -77,11 +77,7 @@ const Academy = () => {
                             <option key={c.id} value={c.name}>{c.name}</option>
                         ))}
                         {defaultClients.length === 0 && (
-                            <>
-                                <option>AlphaTech Solutions</option>
-                                <option>Imobiliária Prime</option>
-                                <option>Construtora Silva</option>
-                            </>
+                            <option disabled>Nenhum cliente cadastrado</option>
                         )}
                     </select>
                 </div>
