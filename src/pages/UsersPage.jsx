@@ -104,6 +104,13 @@ const UsersPage = () => {
         alert(`Senha de ${resetUser.name} redefinida com sucesso!`);
     };
 
+    // Lista de empresas (tenant owners = cliente_admin)
+    const tenantOwners = usersList.filter(u => u.role === 'cliente_admin');
+
+    // Conta clientes admin para exibir nos filtros
+    const totalMatriz = usersList.filter(u => !u.tenantId && u.role !== 'cliente_admin').length;
+    const totalTenants = usersList.filter(u => u.tenantId || u.role === 'cliente_admin').length;
+
     // Filtragem dos usuários na tabela
     const displayedUsers = usersList.filter(u => {
         if (currentUser.role === 'cliente_admin' || currentUser.tenantId) {
@@ -113,12 +120,12 @@ const UsersPage = () => {
         // CEO e matriz
         if (filterType === 'matriz') return !u.tenantId && u.role !== 'cliente_admin';
         if (filterType === 'tenants') return u.tenantId || u.role === 'cliente_admin';
+        if (filterType.startsWith('empresa_')) {
+            const tenantId = Number(filterType.replace('empresa_', ''));
+            return u.id === tenantId || u.tenantId === tenantId;
+        }
         return true; // 'todos'
     });
-
-    // Conta clientes admin para exibir nos filtros
-    const totalMatriz = usersList.filter(u => !u.tenantId && u.role !== 'cliente_admin').length;
-    const totalTenants = usersList.filter(u => u.tenantId || u.role === 'cliente_admin').length;
 
     // Encontra o nome do tenant pai
     const getTenantOwnerName = (member) => {
@@ -128,6 +135,11 @@ const UsersPage = () => {
             return owner ? owner.name : `Tenant #${member.tenantId}`;
         }
         return null;
+    };
+
+    // Conta membros por empresa
+    const countByTenant = (tenantId) => {
+        return usersList.filter(u => u.id === tenantId || u.tenantId === tenantId).length;
     };
 
     return (
@@ -143,22 +155,48 @@ const UsersPage = () => {
             </div>
 
             {/* Filtros (só para CEO) */}
-            {isCeo && totalTenants > 0 && (
-                <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                    {[
-                        { key: 'todos', label: `Todos (${usersList.length})` },
-                        { key: 'matriz', label: `Equipe Matriz (${totalMatriz})` },
-                        { key: 'tenants', label: `Clientes Admin (${totalTenants})` }
-                    ].map(f => (
-                        <button
-                            key={f.key}
-                            className={`btn ${filterType === f.key ? 'btn-primary' : 'btn-outline'}`}
-                            style={{ padding: '6px 14px', fontSize: '0.8rem' }}
-                            onClick={() => setFilterType(f.key)}
-                        >
-                            {f.label}
-                        </button>
-                    ))}
+            {isCeo && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {[
+                            { key: 'todos', label: `Todos (${usersList.length})` },
+                            { key: 'matriz', label: `Equipe Matriz (${totalMatriz})` },
+                            { key: 'tenants', label: `Todas as Empresas (${totalTenants})` }
+                        ].map(f => (
+                            <button
+                                key={f.key}
+                                className={`btn ${filterType === f.key ? 'btn-primary' : 'btn-outline'}`}
+                                style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                                onClick={() => setFilterType(f.key)}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Filtro por empresa específica */}
+                    {tenantOwners.length > 0 && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingLeft: 4 }}>
+                            {tenantOwners.map(owner => {
+                                const key = `empresa_${owner.id}`;
+                                const count = countByTenant(owner.id);
+                                return (
+                                    <button
+                                        key={key}
+                                        className={`btn ${filterType === key ? 'btn-primary' : 'btn-outline'}`}
+                                        style={{
+                                            padding: '4px 12px', fontSize: '0.75rem',
+                                            borderColor: filterType === key ? undefined : 'rgba(168, 85, 247, 0.3)',
+                                            color: filterType === key ? undefined : '#a855f7'
+                                        }}
+                                        onClick={() => setFilterType(filterType === key ? 'todos' : key)}
+                                    >
+                                        🏢 {owner.name} ({count})
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
