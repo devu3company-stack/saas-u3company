@@ -107,8 +107,8 @@ export const AuthProvider = ({ children }) => {
             const myTenantId = user.tenantId || user.id;
             return u.id === myTenantId || u.tenantId === myTenantId;
         }
-        // Matriz (CEO, etc) vê apenas usuários da matriz (sem tenantId)
-        return !u.tenantId && u.role !== 'cliente_admin';
+        // Matriz (CEO, gestor, etc) vê TODOS os usuários do sistema
+        return true;
     });
 
     const getData = useCallback((key, fallback = null) => {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../utils/auth';
-import { UserPlus, Shield, Trash2, ShieldAlert, Edit2, Check, X } from 'lucide-react';
+import { UserPlus, Shield, Trash2, ShieldAlert, Edit2, KeyRound, Building2 } from 'lucide-react';
 
 const ROLE_LABELS = {
     ceo: 'CEO / Admin',
@@ -19,6 +19,11 @@ const UsersPage = () => {
     const [errorMsg, setErrorMsg] = useState('');
     const [selectedRole, setSelectedRole] = useState('gestor');
     const [selectedPerms, setSelectedPerms] = useState(PERMISSIONS['gestor'] || []);
+    const [showResetModal, setShowResetModal] = useState(false);
+    const [resetUser, setResetUser] = useState(null);
+    const [filterType, setFilterType] = useState('todos'); // 'todos', 'matriz', 'tenants'
+
+    const isCeo = currentUser?.role === 'ceo';
 
     const openCreateModal = () => {
         setEditingUser(null);
@@ -54,7 +59,6 @@ const UsersPage = () => {
         const form = e.target;
 
         if (editingUser) {
-            // Editar usuario existente
             updateUser(editingUser.id, {
                 name: form.name.value,
                 role: selectedRole,
@@ -62,7 +66,6 @@ const UsersPage = () => {
             });
             setShowModal(false);
         } else {
-            // Criar novo
             const email = form.email.value;
             if (usersList.some(u => u.email === email)) {
                 setErrorMsg('E-mail já está em uso.');
@@ -88,6 +91,45 @@ const UsersPage = () => {
         }
     };
 
+    const handleResetPassword = (e) => {
+        e.preventDefault();
+        const newPassword = e.target.newPassword.value;
+        if (!newPassword || newPassword.length < 3) {
+            alert('A senha deve ter pelo menos 3 caracteres.');
+            return;
+        }
+        updateUser(resetUser.id, { password: newPassword });
+        setShowResetModal(false);
+        setResetUser(null);
+        alert(`Senha de ${resetUser.name} redefinida com sucesso!`);
+    };
+
+    // Filtragem dos usuários na tabela
+    const displayedUsers = usersList.filter(u => {
+        if (currentUser.role === 'cliente_admin' || currentUser.tenantId) {
+            const myTenantId = currentUser.tenantId || currentUser.id;
+            return u.id === myTenantId || u.tenantId === myTenantId;
+        }
+        // CEO e matriz
+        if (filterType === 'matriz') return !u.tenantId && u.role !== 'cliente_admin';
+        if (filterType === 'tenants') return u.tenantId || u.role === 'cliente_admin';
+        return true; // 'todos'
+    });
+
+    // Conta clientes admin para exibir nos filtros
+    const totalMatriz = usersList.filter(u => !u.tenantId && u.role !== 'cliente_admin').length;
+    const totalTenants = usersList.filter(u => u.tenantId || u.role === 'cliente_admin').length;
+
+    // Encontra o nome do tenant pai
+    const getTenantOwnerName = (member) => {
+        if (member.role === 'cliente_admin') return member.name;
+        if (member.tenantId) {
+            const owner = usersList.find(u => u.id === member.tenantId);
+            return owner ? owner.name : `Tenant #${member.tenantId}`;
+        }
+        return null;
+    };
+
     return (
         <div>
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
@@ -100,6 +142,26 @@ const UsersPage = () => {
                 </button>
             </div>
 
+            {/* Filtros (só para CEO) */}
+            {isCeo && totalTenants > 0 && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                    {[
+                        { key: 'todos', label: `Todos (${usersList.length})` },
+                        { key: 'matriz', label: `Equipe Matriz (${totalMatriz})` },
+                        { key: 'tenants', label: `Clientes Admin (${totalTenants})` }
+                    ].map(f => (
+                        <button
+                            key={f.key}
+                            className={`btn ${filterType === f.key ? 'btn-primary' : 'btn-outline'}`}
+                            style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                            onClick={() => setFilterType(f.key)}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             <div className="card" style={{ padding: 0 }}>
                 <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
                     <table>
@@ -108,26 +170,29 @@ const UsersPage = () => {
                                 <th>Nome & Contato</th>
                                 <th>E-mail (Login)</th>
                                 <th>Nível de Acesso</th>
+                                {isCeo && <th>Empresa / Tenant</th>}
                                 <th>Permissões</th>
                                 <th style={{ textAlign: 'right' }}>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {usersList.filter(u => {
-                                // Se for Admin do Cliente (Tenant), só vê a si mesmo ou quem seu tenant criou
-                                if (currentUser.role === 'cliente_admin' || currentUser.tenantId) {
-                                    const myTenantId = currentUser.tenantId || currentUser.id;
-                                    return u.id === myTenantId || u.tenantId === myTenantId;
-                                }
-                                // Se for Matriz (CEO, etc), não vê os usuários das agências compradoras na "Equipe" principal
-                                return !u.tenantId && u.role !== 'cliente_admin';
-                            }).map(member => {
+                            {displayedUsers.map(member => {
                                 const perms = getUserPermissions(member);
+                                const tenantName = getTenantOwnerName(member);
+                                const isClienteAdmin = member.role === 'cliente_admin';
+                                const isTenantMember = !!member.tenantId;
                                 return (
-                                    <tr key={member.id}>
+                                    <tr key={member.id} style={{
+                                        backgroundColor: isClienteAdmin ? 'rgba(168, 85, 247, 0.03)' : 'transparent'
+                                    }}>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                                                <div style={{
+                                                    width: 36, height: 36, borderRadius: '50%',
+                                                    backgroundColor: isClienteAdmin ? 'rgba(168, 85, 247, 0.15)' : 'var(--bg-tertiary)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontWeight: 'bold', color: isClienteAdmin ? '#a855f7' : 'var(--text-main)'
+                                                }}>
                                                     {member.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div style={{ fontWeight: 600 }}>{member.name}</div>
@@ -138,13 +203,25 @@ const UsersPage = () => {
                                             <span style={{
                                                 display: 'inline-flex', alignItems: 'center', gap: 6,
                                                 padding: '4px 10px', borderRadius: 16, fontSize: '0.8rem', fontWeight: 600,
-                                                backgroundColor: member.role === 'ceo' ? 'rgba(168, 85, 247, 0.1)' : 'var(--bg-tertiary)',
-                                                color: member.role === 'ceo' ? '#a855f7' : 'var(--text-main)'
+                                                backgroundColor: member.role === 'ceo' ? 'rgba(168, 85, 247, 0.1)' : isClienteAdmin ? 'rgba(0, 208, 132, 0.1)' : 'var(--bg-tertiary)',
+                                                color: member.role === 'ceo' ? '#a855f7' : isClienteAdmin ? 'var(--success)' : 'var(--text-main)'
                                             }}>
-                                                {member.role === 'ceo' ? <ShieldAlert size={14} /> : <Shield size={14} />}
+                                                {member.role === 'ceo' ? <ShieldAlert size={14} /> : isClienteAdmin ? <Building2 size={14} /> : <Shield size={14} />}
                                                 {ROLE_LABELS[member.role] || member.role.toUpperCase()}
                                             </span>
                                         </td>
+                                        {isCeo && (
+                                            <td>
+                                                {tenantName ? (
+                                                    <span style={{ fontSize: '0.8rem', color: isClienteAdmin ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        <Building2 size={12} />
+                                                        {isClienteAdmin ? tenantName : `Sub de ${tenantName}`}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Equipe Matriz</span>
+                                                )}
+                                            </td>
+                                        )}
                                         <td>
                                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: 220, lineHeight: 1.6 }}>
                                                 {perms.length} abas liberadas
@@ -154,6 +231,14 @@ const UsersPage = () => {
                                             <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                                                 <button className="btn btn-outline" style={{ padding: '6px 10px' }} onClick={() => openEditModal(member)} title="Editar Permissões">
                                                     <Edit2 size={14} />
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline"
+                                                    style={{ padding: '6px 10px', color: 'var(--warning)', borderColor: 'transparent' }}
+                                                    onClick={() => { setResetUser(member); setShowResetModal(true); }}
+                                                    title="Resetar Senha"
+                                                >
+                                                    <KeyRound size={14} />
                                                 </button>
                                                 {member.id !== 1 && member.id !== 2 && member.id !== currentUser.id && (
                                                     <button className="btn btn-outline" style={{ padding: '6px 10px', color: 'var(--danger)', borderColor: 'transparent' }} onClick={() => handleDelete(member.id)} title="Excluir Usuário">
@@ -165,6 +250,13 @@ const UsersPage = () => {
                                     </tr>
                                 );
                             })}
+                            {displayedUsers.length === 0 && (
+                                <tr>
+                                    <td colSpan={isCeo ? 6 : 5} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+                                        Nenhum usuário encontrado neste filtro.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -259,6 +351,46 @@ const UsersPage = () => {
                             <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
                                 <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">{editingUser ? 'Salvar Alterações' : 'Criar Usuário'}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Resetar Senha */}
+            {showResetModal && resetUser && (
+                <div onClick={() => { setShowResetModal(false); setResetUser(null); }} style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 1000, padding: 20
+                }}>
+                    <div className="card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420 }}>
+                        <h3 style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <KeyRound size={20} color="var(--warning)" /> Resetar Senha
+                        </h3>
+                        <p className="text-muted" style={{ marginBottom: 24, fontSize: '0.85rem' }}>
+                            Definir nova senha para <strong>{resetUser.name}</strong> ({resetUser.email})
+                        </p>
+
+                        <form onSubmit={handleResetPassword}>
+                            <div className="form-group">
+                                <label className="form-label">Nova Senha</label>
+                                <input
+                                    name="newPassword"
+                                    type="text"
+                                    className="form-control"
+                                    required
+                                    minLength={3}
+                                    placeholder="Digite a nova senha"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn btn-outline" onClick={() => { setShowResetModal(false); setResetUser(null); }}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <KeyRound size={14} /> Redefinir Senha
+                                </button>
                             </div>
                         </form>
                     </div>
