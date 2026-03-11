@@ -5,6 +5,8 @@ const axios = require('axios');
 const http = require('http');
 const { Server } = require('socket.io');
 const ioClient = require('socket.io-client');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const db = require('./db');
 const { searchLeads } = require('./services/puppeteerScraper');
 
@@ -23,6 +25,23 @@ const ZAPPRO_API_URL = process.env.ZAPPRO_API_URL || 'https://bk.lrcatelan.com';
 const ZAPPRO_API_TOKEN = process.env.ZAPPRO_API_TOKEN;
 const ZAPPRO_COMPANY_ID = process.env.ZAPPRO_COMPANY_ID || '1';
 const ZAPPRO_USER_ID = process.env.ZAPPRO_USER_ID || '1';
+
+// Email Config
+const EMAIL_HOST = process.env.EMAIL_HOST;
+const EMAIL_PORT = process.env.EMAIL_PORT || 465;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const EMAIL_FROM = process.env.EMAIL_FROM || '"U3 Company Support" <suporte@u3company.com>';
+
+const transporter = nodemailer.createTransport({
+    host: EMAIL_HOST,
+    port: EMAIL_PORT,
+    secure: Number(EMAIL_PORT) === 465, // true for 465, false for other ports
+    auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
+    },
+});
 
 //==========================================================
 // CONFIGURAÇÃO DO SOCKET.IO (CONEXÃO SAAS -> ZAPPRO)
@@ -153,10 +172,6 @@ app.post('/api/meta/capi', async (req, res) => {
     }
 });
 
-const PORT = 3001;
-server.listen(PORT, () => {
-    console.log(`🚀 Saas Bridge CRM rodando na porta ${PORT}`);
-});
 
 //==========================================================
 // DATABASE API - DADOS COMPARTILHADOS ENTRE USUARIOS
@@ -287,5 +302,77 @@ app.post('/api/extract-leads', async (req, res) => {
         console.error('Error during extraction process:', error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
+});
+
+//==========================================================
+// WEBHOOK KIWIFY - AUTOMAÇÃO DE VENDAS
+//==========================================================
+app.post('/api/webhooks/kiwify', async (req, res) => {
+    console.log('📦 Recebido Webhook Kiwify:', req.body.order_status);
+
+    const { order_status, customer } = req.body;
+
+    if (order_status !== 'paid') {
+        return res.status(200).send('Status não processado');
+    }
+
+    const { full_name, email } = customer;
+
+    const userExists = db.get('users').find({ email: email }).value();
+
+    if (userExists) {
+        console.log(`⚠️ Usuário ${email} já existe. Ignorando criação.`);
+        return res.status(200).send('Usuário já existe');
+    }
+
+    const password = crypto.randomBytes(4).toString('hex');
+
+    const newUser = {
+        id: Date.now(),
+        name: full_name,
+        email: email,
+        password: password,
+        role: 'cliente_admin',
+        createdAt: new Date().toISOString()
+    };
+
+    db.get('users').push(newUser).write();
+
+    console.log(`✅ Novo usuário criado para Kiwify: ${email}`);
+
+    try {
+        const platformUrl = 'https://saas-u3company.vercel.app';
+
+        await transporter.sendMail({
+            from: EMAIL_FROM,
+            to: email,
+            subject: '🚀 Seu acesso ao U3 SaaS chegou!',
+            html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #00e5ff;">Bem-vindo ao U3 SaaS!</h2>
+                    <p>Olá <strong>${full_name}</strong>, sua compra foi aprovada e seu acesso já está liberado.</p>
+                    <p>Aqui estão suas credenciais para login:</p>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p style="margin: 5px 0;"><strong>URL:</strong> <a href="${platformUrl}">${platformUrl}</a></p>
+                        <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+                        <p style="margin: 5px 0;"><strong>Senha Temporária:</strong> ${password}</p>
+                    </div>
+                    <p>Recomendamos que você altere sua senha no primeiro acesso em seu perfil.</p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #777;">Este é um email automático, por favor não responda.</p>
+                </div>
+            `
+        });
+        console.log(`📧 Email enviado com sucesso para ${email}`);
+    } catch (error) {
+        console.error('❌ Erro ao enviar email:', error);
+    }
+
+    res.status(200).send('Webhook processado com sucesso');
+});
+
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
 
