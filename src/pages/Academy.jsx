@@ -4,9 +4,9 @@ import { useAuth } from '../utils/auth';
 
 const Academy = () => {
     const { getData, setData } = useAuth();
-    const defaultClients = getData('u3_clients', '[]');
-    const initialClient = defaultClients.length > 0 ? defaultClients[0].name : 'AlphaTech Solutions';
-    const [selectedClient, setSelectedClient] = useState(initialClient);
+    const defaultClients = getData('u3_clients_v2', '[]') || [];
+    const clientsList = Array.isArray(defaultClients) ? defaultClients : [];
+    const [selectedClient, setSelectedClient] = useState(clientsList.length > 0 ? clientsList[0].name : '');
     const [isEditingRoadmap, setIsEditingRoadmap] = useState(false);
 
     const defaultRoadmap = [
@@ -16,15 +16,23 @@ const Academy = () => {
     ];
 
     const [roadmaps, setRoadmaps] = useState(() => {
-        return getData('u3_roadmaps', '{}');
+        const saved = getData('u3_roadmaps', '{}');
+        return (saved && typeof saved === 'object' && !Array.isArray(saved)) ? saved : {};
     });
 
     const [academySettings, setAcademySettings] = useState(() => {
-        return getData('u3_academy_settings', '{}');
+        const saved = getData('u3_academy_settings', '{}');
+        return (saved && typeof saved === 'object' && !Array.isArray(saved)) ? saved : {};
     });
 
-    const currentRoadmap = roadmaps[selectedClient] || defaultRoadmap;
-    const currentSettings = academySettings[selectedClient] || { ltv: 15000 };
+    const currentRoadmap = (selectedClient && roadmaps[selectedClient]) || defaultRoadmap;
+
+    // LTV calculado a partir dos dados do cliente (tempo de contrato x mensalidade)
+    const selectedClientData = clientsList.find(c => c.name === selectedClient);
+    const clientLtv = selectedClientData
+        ? (parseFloat(String(selectedClientData.mrr || '0').replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0) * (selectedClientData.tempoContrato || 1)
+        : 0;
+    const currentSettings = (selectedClient && academySettings[selectedClient]) || { ltv: clientLtv };
 
     const saveRoadmap = (updatedRoadmap) => {
         const newRoadmaps = { ...roadmaps, [selectedClient]: updatedRoadmap };
@@ -73,12 +81,10 @@ const Academy = () => {
                         onChange={(e) => setSelectedClient(e.target.value)}
                         style={{ minWidth: 200 }}
                     >
-                        {defaultClients.map(c => (
+                        <option value="">Selecione um cliente</option>
+                        {clientsList.map(c => (
                             <option key={c.id} value={c.name}>{c.name}</option>
                         ))}
-                        {defaultClients.length === 0 && (
-                            <option disabled>Nenhum cliente cadastrado</option>
-                        )}
                     </select>
                 </div>
             </div>
