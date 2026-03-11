@@ -82,8 +82,8 @@ const Prospecting = () => {
                 showToast('❌ Nenhum lead encontrado com estes parâmetros.');
             }
         } catch (error) {
-            console.error(error);
-            showToast(`❌ Falha de Conexão: Certifique-se que a API do Lead Extractor (Node) está rodando na porta 3000.`);
+            console.error('Erro de extração API:', error);
+            showToast(`❌ Falha na Extração: ${error.message || 'Verifique se o backend está rodando e respondendo corretamente.'}`);
         }
         setScraping(false);
     };
