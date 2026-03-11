@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { BarChart2, Star, Link2, Copy, CheckCircle, ExternalLink, Trash2 } from 'lucide-react';
+import { BarChart2, Star, Link2, Copy, CheckCircle, ExternalLink, Trash2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../utils/auth';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://saas-u3company.onrender.com';
+
 const Surveys = () => {
-    const { getData } = useAuth();
+    const { user, getData, setData } = useAuth();
     const [clients, setClients] = useState([]);
     const [responses, setResponses] = useState([]);
     const [copiedId, setCopiedId] = useState(null);
@@ -11,13 +13,51 @@ const Surveys = () => {
     const [selectedClient, setSelectedClient] = useState(null);
     const [generatedLink, setGeneratedLink] = useState('');
 
-    useEffect(() => {
+    // Calcula o namespace baseado no user logado (mesma lógica do auth.jsx)
+    const getNamespace = () => {
+        if (!user) return 'shared';
+        if (user.id === 1) return 'demo';
+        if (user.role === 'cliente_admin' || user.tenantId) return `tenant_${user.tenantId || user.id}`;
+        return 'shared';
+    };
+
+    const loadData = () => {
         const clientsData = getData('u3_clients_v2', '[]') || [];
         setClients(Array.isArray(clientsData) ? clientsData : []);
 
-        const npsResponses = JSON.parse(localStorage.getItem('u3_nps_responses') || '[]');
-        setResponses(npsResponses);
+        const npsData = getData('u3_nps_responses', '[]') || [];
+        setResponses(Array.isArray(npsData) ? npsData : []);
+    };
+
+    useEffect(() => {
+        loadData();
+
+        // Também busca do backend para garantir dados atualizados
+        const namespace = getNamespace();
+        fetch(`${API_BASE}/api/data/${namespace}/u3_nps_responses`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.value) && data.value.length > 0) {
+                    setResponses(data.value);
+                    // Atualiza o cache local
+                    setData('u3_nps_responses', data.value);
+                }
+            })
+            .catch(() => { });
     }, [getData]);
+
+    const refreshResponses = () => {
+        const namespace = getNamespace();
+        fetch(`${API_BASE}/api/data/${namespace}/u3_nps_responses`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.value)) {
+                    setResponses(data.value);
+                    setData('u3_nps_responses', data.value);
+                }
+            })
+            .catch(() => { });
+    };
 
     const avgScore = responses.length > 0
         ? (responses.reduce((acc, r) => acc + r.score, 0) / responses.length).toFixed(1)
@@ -35,7 +75,8 @@ const Surveys = () => {
 
     const generateNpsLink = (client) => {
         const baseUrl = window.location.origin;
-        const link = `${baseUrl}/nps/${client.id}`;
+        const namespace = getNamespace();
+        const link = `${baseUrl}/nps/${namespace}/${client.id}`;
         setSelectedClient(client);
         setGeneratedLink(link);
         setShowLinkModal(true);
@@ -50,7 +91,7 @@ const Surveys = () => {
     const deleteResponse = (responseId) => {
         const updated = responses.filter(r => r.id !== responseId);
         setResponses(updated);
-        localStorage.setItem('u3_nps_responses', JSON.stringify(updated));
+        setData('u3_nps_responses', updated);
     };
 
     return (
@@ -60,7 +101,14 @@ const Surveys = () => {
                     <h2>Pesquisas de Satisfação (NPS)</h2>
                     <p className="text-muted">Feedback dos clientes — gere links exclusivos para coleta</p>
                 </div>
-                <button className="btn btn-outline" onClick={() => alert("Gerando Relatório Completo Avançado em PDF... Isso será enviado para o seu e-mail do sistema.")}><BarChart2 size={16} /> Relatório Completo</button>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <button className="btn btn-outline" onClick={refreshResponses} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <RefreshCw size={16} /> Atualizar
+                    </button>
+                    <button className="btn btn-outline" onClick={() => alert("Gerando Relatório Completo Avançado em PDF... Isso será enviado para o seu e-mail do sistema.")}>
+                        <BarChart2 size={16} /> Relatório Completo
+                    </button>
+                </div>
             </div>
 
             <div className="grid-cards">
@@ -82,13 +130,15 @@ const Surveys = () => {
                     <Link2 size={18} /> Gerar Link NPS Exclusivo
                 </h3>
                 <p className="text-muted" style={{ marginBottom: 16, fontSize: '0.85rem' }}>
-                    Selecione um cliente para gerar um link exclusivo de pesquisa NPS. O cliente poderá acessar pelo navegador e deixar sua nota + feedback.
+                    Selecione um cliente para gerar um link exclusivo de pesquisa NPS. O cliente poderá acessar pelo navegador e deixar sua nota + feedback. Os dados são salvos no banco de dados e acessíveis de qualquer dispositivo.
                 </p>
 
                 {clients.length > 0 ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
                         {clients.map(client => {
-                            const hasResponse = responses.some(r => r.clientId === client.id.toString());
+                            const clientResponses = responses.filter(r => r.clientId === client.id.toString());
+                            const hasResponse = clientResponses.length > 0;
+                            const lastScore = hasResponse ? clientResponses[clientResponses.length - 1].score : null;
                             return (
                                 <div key={client.id} style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -98,7 +148,9 @@ const Surveys = () => {
                                     <div>
                                         <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{client.name}</div>
                                         <div style={{ fontSize: '0.75rem', color: hasResponse ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                                            {hasResponse ? <><CheckCircle size={12} /> Já respondeu</> : 'Aguardando resposta'}
+                                            {hasResponse ? (
+                                                <><CheckCircle size={12} /> Nota: {lastScore}/10 ({clientResponses.length} resposta{clientResponses.length > 1 ? 's' : ''})</>
+                                            ) : 'Aguardando resposta'}
                                         </div>
                                     </div>
                                     <button
@@ -203,7 +255,7 @@ const Surveys = () => {
 
                         <div style={{ padding: 12, backgroundColor: 'rgba(0, 208, 132, 0.1)', borderRadius: 8, border: '1px solid rgba(0, 208, 132, 0.2)', marginBottom: 16 }}>
                             <p style={{ fontSize: '0.8rem', color: 'var(--success)', margin: 0 }}>
-                                💡 Dica: Envie pelo WhatsApp, e-mail ou qualquer canal. O cliente preencherá pelo celular ou computador.
+                                💡 Os dados são salvos no banco de dados. Você pode acessar as respostas de qualquer dispositivo.
                             </p>
                         </div>
 

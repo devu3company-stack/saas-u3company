@@ -198,6 +198,55 @@ app.post('/api/data/:namespace/:key', (req, res) => {
     }
 });
 
+//==========================================================
+// NPS API - Endpoint público para pesquisas NPS
+//==========================================================
+
+// POST: Salva uma resposta NPS no namespace correto
+app.post('/api/nps/:namespace', (req, res) => {
+    const { namespace } = req.params;
+    const { response } = req.body;
+    try {
+        const key = 'u3_nps_responses';
+        let existing;
+        if (namespace === 'shared') {
+            existing = db.get(`shared.${key}`).value() || [];
+        } else {
+            if (!db.get(`tenants.${namespace}`).value()) {
+                db.set(`tenants.${namespace}`, {}).write();
+            }
+            existing = db.get(`tenants.${namespace}.${key}`).value() || [];
+        }
+        existing.push(response);
+        if (namespace === 'shared') {
+            db.set(`shared.${key}`, existing).write();
+        } else {
+            db.set(`tenants.${namespace}.${key}`, existing).write();
+        }
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+// GET: Busca o nome do cliente pelo namespace e ID (para a página pública NPS)
+app.get('/api/nps/:namespace/client/:clientId', (req, res) => {
+    const { namespace, clientId } = req.params;
+    try {
+        const key = 'u3_clients_v2';
+        let clients;
+        if (namespace === 'shared') {
+            clients = db.get(`shared.${key}`).value() || [];
+        } else {
+            clients = db.get(`tenants.${namespace}.${key}`).value() || [];
+        }
+        const client = clients.find(c => c.id.toString() === clientId.toString());
+        res.json({ success: true, clientName: client ? client.name : 'Cliente' });
+    } catch (e) {
+        res.json({ success: true, clientName: 'Cliente' });
+    }
+});
+
 // GET: Lista todos os usuarios
 app.get('/api/users', (req, res) => {
     const users = db.get('users').value();

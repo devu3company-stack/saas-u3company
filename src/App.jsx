@@ -36,7 +36,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/nps/:id" element={<NpsSurvey />} />
+          <Route path="/nps/:namespace/:id" element={<NpsSurvey />} />
 
           <Route path="/" element={<DashboardLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
