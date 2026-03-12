@@ -63,6 +63,7 @@ export const AuthProvider = ({ children }) => {
     });
 
     // Carrega usuários do backend ao iniciar
+    // Carrega usuários do backend ao iniciar e realiza migrações de legado
     useEffect(() => {
         const syncUsers = async () => {
             try {
@@ -70,18 +71,19 @@ export const AuthProvider = ({ children }) => {
                 const data = await r.json();
 
                 if (data.success && Array.isArray(data.users)) {
-                    const localHasCustom = usersList.length > INITIAL_USERS.length;
+                    // Usamos uma referência direta para evitar dependência do usersList
+                    const currentLocalUsers = JSON.parse(localStorage.getItem('u3_users_db') || JSON.stringify(INITIAL_USERS));
+                    const localHasCustom = currentLocalUsers.length > INITIAL_USERS.length;
                     const remoteHasCustom = data.users.length > INITIAL_USERS.length;
 
                     if (remoteHasCustom || (data.users.length > 0 && !localHasCustom)) {
-                        // Backend tem dados reais ou mais dados que a gente, atualiza local
                         console.log("📥 Recebendo usuários do servidor...");
                         setUsersList(data.users);
                         localStorage.setItem('u3_users_db', JSON.stringify(data.users));
                     } else if (localHasCustom && data.users.length <= INITIAL_USERS.length) {
-                        // Nós temos dados reais e o servidor está "vazio" (apenas padrões), envia pro servidor
                         console.log("📤 Sincronizando usuários locais (Backup)...");
-                        saveUsers(usersList);
+                        // saveUsers já lida com o POST
+                        saveUsers(currentLocalUsers);
                     }
                 }
             } catch (err) {
@@ -91,7 +93,7 @@ export const AuthProvider = ({ children }) => {
 
         syncUsers();
         
-        // RECUPERAÇÃO DE DADOS LEGADOS (Caso as chaves tenham mudado)
+        // RECUPERAÇÃO DE DADOS LEGADOS (Uma única vez ao montar)
         const rescueLegacy = () => {
             const keysToRescue = ['clients_v2', 'tarefas', 'leads', 'users_db'];
             keysToRescue.forEach(key => {
@@ -102,7 +104,7 @@ export const AuthProvider = ({ children }) => {
                     try {
                         const parsed = JSON.parse(val);
                         const finalKey = key === 'users_db' ? 'u3_users_db' : 'u3_' + key;
-                        // Se for usuários, mescla cuidadosamente
+                        
                         if (key === 'users_db') {
                             const current = JSON.parse(localStorage.getItem('u3_users_db') || '[]');
                             const merged = [...current];
@@ -111,9 +113,20 @@ export const AuthProvider = ({ children }) => {
                             });
                             saveUsers(merged);
                         } else {
-                            setData(finalKey, parsed, 'shared');
+                            //setData local + backend
+                            const namespace = 'shared';
+                            const localKey = `${namespace}__${finalKey}`;
+                            localStorage.setItem(localKey, JSON.stringify(parsed));
+                            fetch(`${API_BASE}/api/data/${namespace}/${finalKey}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ value: parsed })
+                            }).catch(() => {});
                         }
                         console.log(`✅ Recuperado legado: ${key}`);
+                        // Limpa o legado para não re-processar
+                        localStorage.removeItem(key);
+                        localStorage.removeItem('u3_' + key);
                     } catch (e) {}
                 }
             });
@@ -121,10 +134,12 @@ export const AuthProvider = ({ children }) => {
         rescueLegacy();
 
         window.__u3_force_sync = () => {
-             saveUsers(usersList);
+             // Força o envio da lista atual para o backend
+             const currentList = JSON.parse(localStorage.getItem('u3_users_db') || '[]');
+             saveUsers(currentList);
              return "Sincronização enviada!";
         };
-    }, [usersList]);
+    }, []); // IMPORTANTE: Array vazio para rodar apenas uma vez no boot e evitar loops infinitos
 
     // ============================================================
     // NAMESPACE: define em qual "pasta" da API o dado é salvo
@@ -178,8 +193,8 @@ export const AuthProvider = ({ children }) => {
                 const legacy = localStorage.getItem(key);
                 if (legacy !== null) {
                     const parsed = JSON.parse(legacy);
-                    // Salva no novo formato para as próximas vezes para consolidar a migração
-                    setData(key, parsed, namespace);
+                    // A migração ocorre apenas no cache local aqui para evitar loops de render
+                    localStorage.setItem(localKey, legacy);
                     return parsed;
                 }
             } catch { }
