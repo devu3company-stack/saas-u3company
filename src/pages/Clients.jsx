@@ -19,14 +19,27 @@ const Clients = () => {
     }, [location]);
 
     const [clients, setClients] = useState(() => {
-        const data = getData('u3_clients_v2', '[]');
+        const data = getData('u3_clients_v2', '[]', 'shared');
         return Array.isArray(data) ? data : [];
     });
 
     const saveClients = (newList) => {
         setClients(newList);
-        setData('u3_clients_v2', newList);
+        setData('u3_clients_v2', newList, 'shared');
     };
+
+    // OUVINTE DE ATUALIZAÇÃO DE DADOS EM TEMPO REAL
+    useEffect(() => {
+        const handleDataUpdate = (e) => {
+            const { key, value } = e.detail;
+            if (key === 'u3_clients_v2') {
+                setClients(value);
+            }
+        };
+
+        window.addEventListener('u3_data_updated', handleDataUpdate);
+        return () => window.removeEventListener('u3_data_updated', handleDataUpdate);
+    }, []);
 
     const parseMrr = (mrr) => {
         return parseFloat(String(mrr || '0').replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
@@ -126,7 +139,8 @@ const Clients = () => {
                     ))}
                 </div>
                 <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
-                    <table>
+                    {/* Versão Desktop (Tabela) */}
+                    <table className="hide-mobile">
                         <thead>
                             <tr>
                                 <th>Empresa</th>
@@ -179,6 +193,30 @@ const Clients = () => {
                             })}
                         </tbody>
                     </table>
+
+                    {/* Versão Mobile (Cards) */}
+                    <div className="show-mobile-only" style={{ display: 'none' }}>
+                        {filtered.map(client => (
+                            <div key={client.id} style={{ padding: 16, borderBottom: '1px solid var(--border-color)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <div style={{ fontWeight: 700, fontSize: '1rem' }}>{client.name}</div>
+                                    <span className={`badge ${client.status}`} style={{ fontSize: '0.65rem' }}>{client.status.toUpperCase()}</span>
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+                                    {client.contato} | Responsável: {client.responsavel}
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    {!isDesigner && (
+                                        <div style={{ fontWeight: 600, color: 'var(--success)' }}>{client.mrr}</div>
+                                    )}
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <Link to={`/clientes/${client.id}`} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.7rem' }}>360°</Link>
+                                        <button className="btn btn-outline" style={{ padding: '4px 8px' }} onClick={() => handleEdit(client)}><Edit2 size={14} /></button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -187,9 +225,9 @@ const Clients = () => {
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
                     backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', zIndex: 1000
+                    justifyContent: 'center', zIndex: 1000, padding: 20, overflowY: 'auto'
                 }}>
-                    <div className="card" style={{ width: '100%', maxWidth: 500 }}>
+                    <div className="card modal-content" style={{ width: '100%', maxWidth: 500 }}>
                         <h3 style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border-color)' }}>
                             {editingClient ? 'Editar Cliente' : 'Onboarding de Novo Cliente'}
                         </h3>

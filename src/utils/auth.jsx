@@ -64,22 +64,67 @@ export const AuthProvider = ({ children }) => {
 
     // Carrega usuários do backend ao iniciar
     useEffect(() => {
-        fetch(`${API_BASE}/api/users`)
-            .then(r => r.json())
-            .then(data => {
-                if (data.success && Array.isArray(data.users) && data.users.length > 0) {
-                    setUsersList(data.users);
-                    localStorage.setItem('u3_users_db', JSON.stringify(data.users));
+        const syncUsers = async () => {
+            try {
+                const r = await fetch(`${API_BASE}/api/users`);
+                const data = await r.json();
+
+                if (data.success && Array.isArray(data.users)) {
+                    const localHasCustom = usersList.length > INITIAL_USERS.length;
+                    const remoteHasCustom = data.users.length > INITIAL_USERS.length;
+
+                    if (remoteHasCustom || (data.users.length > 0 && !localHasCustom)) {
+                        // Backend tem dados reais ou mais dados que a gente, atualiza local
+                        console.log("📥 Recebendo usuários do servidor...");
+                        setUsersList(data.users);
+                        localStorage.setItem('u3_users_db', JSON.stringify(data.users));
+                    } else if (localHasCustom && data.users.length <= INITIAL_USERS.length) {
+                        // Nós temos dados reais e o servidor está "vazio" (apenas padrões), envia pro servidor
+                        console.log("📤 Sincronizando usuários locais (Backup)...");
+                        saveUsers(usersList);
+                    }
                 }
-            })
-            .catch(() => {
-                // Backend offline: usa localStorage como fallback
-                const saved = localStorage.getItem('u3_users_db');
-                if (saved) {
-                    try { setUsersList(JSON.parse(saved)); } catch { }
+            } catch (err) {
+                console.error("Erro ao sincronizar usuários:", err);
+            }
+        };
+
+        syncUsers();
+        
+        // RECUPERAÇÃO DE DADOS LEGADOS (Caso as chaves tenham mudado)
+        const rescueLegacy = () => {
+            const keysToRescue = ['clients_v2', 'tarefas', 'leads', 'users_db'];
+            keysToRescue.forEach(key => {
+                const legacy = localStorage.getItem(key);
+                const u3Legacy = localStorage.getItem('u3_' + key);
+                const val = legacy || u3Legacy;
+                if (val) {
+                    try {
+                        const parsed = JSON.parse(val);
+                        const finalKey = key === 'users_db' ? 'u3_users_db' : 'u3_' + key;
+                        // Se for usuários, mescla cuidadosamente
+                        if (key === 'users_db') {
+                            const current = JSON.parse(localStorage.getItem('u3_users_db') || '[]');
+                            const merged = [...current];
+                            parsed.forEach(u => {
+                                if (!merged.find(m => m.email === u.email)) merged.push(u);
+                            });
+                            saveUsers(merged);
+                        } else {
+                            setData(finalKey, parsed, 'shared');
+                        }
+                        console.log(`✅ Recuperado legado: ${key}`);
+                    } catch (e) {}
                 }
             });
-    }, []);
+        };
+        rescueLegacy();
+
+        window.__u3_force_sync = () => {
+             saveUsers(usersList);
+             return "Sincronização enviada!";
+        };
+    }, [usersList]);
 
     // ============================================================
     // NAMESPACE: define em qual "pasta" da API o dado é salvo
@@ -102,20 +147,23 @@ export const AuthProvider = ({ children }) => {
     // Listagem de usuários filtrada para o contexto (visibilidade por tenant)
     const filteredUsersList = usersList.filter(u => {
         if (!user) return false;
-        if (user.id === 1) return u.id === 1; // Demo só vê a si mesmo
+        // Demo agora vê a si mesmo e a equipe matriz (facilitando testes)
+        if (user.id === 1) return u.id === 1 || !u.tenantId;
+        if (user.role === 'ceo' || user.role === 'gestor') return true; // CEO/Gestor vê tudo
+
         if (user.role === 'cliente_admin' || user.tenantId) {
             const myTenantId = user.tenantId || user.id;
             return u.id === myTenantId || u.tenantId === myTenantId;
         }
-        // Matriz (CEO, gestor, etc) vê TODOS os usuários do sistema
         return true;
     });
 
-    const getData = useCallback((key, fallback = null) => {
-        const namespace = getNamespace();
+    const getData = useCallback((key, fallback = null, overrideNamespace = null) => {
+        const baseNamespace = getNamespace();
+        const namespace = overrideNamespace || baseNamespace;
         const localKey = `${namespace}__${key}`;
 
-        // 1. Retorna do cache local imediatamente (sem esperar a API)
+        // 1. Tenta Cache Local (Novo Formato)
         try {
             const cached = localStorage.getItem(localKey);
             if (cached !== null) {
@@ -123,33 +171,56 @@ export const AuthProvider = ({ children }) => {
             }
         } catch { }
 
-        // 2. Dispara a busca async no backend para manter cache atualizado
+        // 2. MIGRAÇÃO: Se não achou com prefixo, tenta o legado (sem prefixo)
+        // Isso recupera o que o usuário já tinha criado antes da atualização do sistema
+        if (namespace === 'shared' || namespace === 'demo' || namespace.startsWith('tenant_')) {
+            try {
+                const legacy = localStorage.getItem(key);
+                if (legacy !== null) {
+                    const parsed = JSON.parse(legacy);
+                    // Salva no novo formato para as próximas vezes para consolidar a migração
+                    setData(key, parsed, namespace);
+                    return parsed;
+                }
+            } catch { }
+        }
+
+        // 3. Busca Backend
         fetch(`${API_BASE}/api/data/${namespace}/${key}`)
             .then(r => r.json())
             .then(data => {
                 if (data.success && data.value !== null) {
-                    localStorage.setItem(localKey, JSON.stringify(data.value));
+                    const newValue = JSON.stringify(data.value);
+                    if (localStorage.getItem(localKey) !== newValue) {
+                        localStorage.setItem(localKey, newValue);
+                        window.dispatchEvent(new CustomEvent('u3_data_updated', { detail: { key, namespace, value: data.value } }));
+                    }
+                } else if (namespace === 'shared' && baseNamespace.startsWith('tenant_')) {
+                    // FALLBACK DE MIGRAÇÃO: Se não achou no 'shared' mas o usuário é de um Tenant, 
+                    // tenta buscar no namespace antigo do próprio tenant
+                    fetch(`${API_BASE}/api/data/${baseNamespace}/${key}`)
+                        .then(r2 => r2.json())
+                        .then(data2 => {
+                            if (data2.success && data2.value !== null) {
+                                // Migra automaticamente para o shared para futuras consultas
+                                setData(key, data2.value, 'shared');
+                                window.dispatchEvent(new CustomEvent('u3_data_updated', { detail: { key, namespace: 'shared', value: data2.value } }));
+                            }
+                        });
                 }
             })
             .catch(() => { });
 
-        // 3. Retorna o fallback APENAS se for a Matriz (shared) ou Demo
-        // Para novos Tenants, retornamos vazio para garantir que o painel inicie limpo.
-        if (namespace !== 'shared' && namespace !== 'demo') {
-            if (typeof fallback === 'string' && fallback.startsWith('[')) return [];
-            if (typeof fallback === 'string' && fallback.startsWith('{')) return {};
-            return null;
-        }
-
+        // 3. Fallback de Valor
         if (fallback === null) return null;
         if (typeof fallback === 'string') {
             try { return JSON.parse(fallback); } catch { return fallback; }
         }
         return fallback;
-    }, [getNamespace]);
+    }, [getNamespace, setData]);
 
-    const setData = useCallback((key, value) => {
-        const namespace = getNamespace();
+    const setData = useCallback((key, value, overrideNamespace = null) => {
+        const namespace = overrideNamespace || getNamespace();
         const localKey = `${namespace}__${key}`;
 
         // Salva no cache local imediatamente
@@ -165,14 +236,14 @@ export const AuthProvider = ({ children }) => {
         });
     }, [getNamespace]);
 
-    const removeData = useCallback((key) => {
-        const namespace = getNamespace();
+    const removeData = useCallback((key, overrideNamespace = null) => {
+        const namespace = overrideNamespace || getNamespace();
         const localKey = `${namespace}__${key}`;
         localStorage.removeItem(localKey);
     }, [getNamespace]);
 
-    const clearData = useCallback(() => {
-        const namespace = getNamespace();
+    const clearData = useCallback((overrideNamespace = null) => {
+        const namespace = overrideNamespace || getNamespace();
         const prefix = `${namespace}__`;
         Object.keys(localStorage)
             .filter(k => k.startsWith(prefix))

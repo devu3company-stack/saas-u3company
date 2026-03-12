@@ -15,8 +15,21 @@ const Leads = () => {
     // PERSISTÊNCIA MANUAL
     const saveLeads = (newList) => {
         setPipeline(newList);
-        setData('u3_leads', newList);
+        setData('u3_leads', newList, 'shared');
     };
+
+    // OUVINTE DE ATUALIZAÇÃO DE DADOS EM TEMPO REAL
+    useEffect(() => {
+        const handleDataUpdate = (e) => {
+            const { key, value } = e.detail;
+            if (key === 'u3_leads') {
+                setPipeline(value);
+            }
+        };
+
+        window.addEventListener('u3_data_updated', handleDataUpdate);
+        return () => window.removeEventListener('u3_data_updated', handleDataUpdate);
+    }, []);
 
     const handleDragStart = (e, leadId) => {
         e.dataTransfer.setData('leadId', leadId);
@@ -84,7 +97,7 @@ const Leads = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 24, overflowX: 'auto', paddingBottom: 16, minHeight: 'calc(100vh - 200px)', alignItems: 'flex-start' }}>
+            <div className="kanban-board-container" style={{ display: 'flex', gap: 24, overflowX: 'auto', paddingBottom: 16, minHeight: 'calc(100vh - 200px)', alignItems: 'flex-start' }}>
                 {stages.map(stage => {
                     const leadsInStage = pipeline.filter(l => l.status === stage);
 
@@ -93,6 +106,7 @@ const Leads = () => {
                             key={stage}
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, stage)}
+                            className="kanban-column"
                             style={{
                                 minWidth: 280, backgroundColor: 'var(--bg-tertiary)', borderRadius: 12, padding: 16,
                                 border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 16

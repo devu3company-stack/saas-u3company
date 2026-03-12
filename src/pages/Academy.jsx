@@ -3,10 +3,21 @@ import { Target, MessageCircle, Calendar, Edit2, Save, Trash2, Plus } from 'luci
 import { useAuth } from '../utils/auth';
 
 const Academy = () => {
-    const { getData, setData } = useAuth();
-    const defaultClients = getData('u3_clients_v2', '[]') || [];
+    const { user, getData, setData } = useAuth();
+    const defaultClients = getData('u3_clients_v2', '[]', 'shared') || [];
     const clientsList = Array.isArray(defaultClients) ? defaultClients : [];
-    const [selectedClient, setSelectedClient] = useState(clientsList.length > 0 ? clientsList[0].name : '');
+
+    // Se for cliente, tenta achar o nome dele na lista de empresas
+    const initialClient = () => {
+        if (user?.role === 'cliente' || user?.role === 'cliente_admin') {
+            const myTenantId = user?.tenantId || user?.id;
+            const myClient = clientsList.find(c => c.id === myTenantId);
+            if (myClient) return myClient.name;
+        }
+        return clientsList.length > 0 ? clientsList[0].name : '';
+    };
+
+    const [selectedClient, setSelectedClient] = useState(initialClient());
     const [isEditingRoadmap, setIsEditingRoadmap] = useState(false);
 
     const defaultRoadmap = [
@@ -16,12 +27,12 @@ const Academy = () => {
     ];
 
     const [roadmaps, setRoadmaps] = useState(() => {
-        const saved = getData('u3_roadmaps', '{}');
+        const saved = getData('u3_roadmaps', '{}', 'shared');
         return (saved && typeof saved === 'object' && !Array.isArray(saved)) ? saved : {};
     });
 
     const [academySettings, setAcademySettings] = useState(() => {
-        const saved = getData('u3_academy_settings', '{}');
+        const saved = getData('u3_academy_settings', '{}', 'shared');
         return (saved && typeof saved === 'object' && !Array.isArray(saved)) ? saved : {};
     });
 
@@ -37,13 +48,13 @@ const Academy = () => {
     const saveRoadmap = (updatedRoadmap) => {
         const newRoadmaps = { ...roadmaps, [selectedClient]: updatedRoadmap };
         setRoadmaps(newRoadmaps);
-        setData('u3_roadmaps', newRoadmaps);
+        setData('u3_roadmaps', newRoadmaps, 'shared');
     };
 
     const saveSettings = (newSettings) => {
         const updated = { ...academySettings, [selectedClient]: newSettings };
         setAcademySettings(updated);
-        setData('u3_academy_settings', updated);
+        setData('u3_academy_settings', updated, 'shared');
     };
 
     const activeStepsCount = currentRoadmap.filter(s => s.active).length;

@@ -27,6 +27,14 @@ const DashboardLayout = () => {
     reader.readAsDataURL(file);
   };
 
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      if (e.detail.key === 'u3_logo') setLogo(e.detail.value);
+    };
+    window.addEventListener('u3_data_updated', handleUpdate);
+    return () => window.removeEventListener('u3_data_updated', handleUpdate);
+  }, []);
+
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { path: '/clientes', label: 'Clientes', icon: <Users size={20} /> },
@@ -67,6 +75,17 @@ const DashboardLayout = () => {
             </>
           )}
         </div>
+        <div style={{ padding: '0 16px', marginBottom: 20 }}>
+          <div style={{ backgroundColor: 'rgba(255, 246, 0, 0.05)', padding: 12, borderRadius: 12, border: '1px solid rgba(255, 246, 0, 0.1)' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <Users size={14} /> {user?.name}
+            </div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {user?.role === 'ceo' ? '🔑 CEO / Administrador' : user?.role === 'cliente_admin' ? '🏢 Cliente Admin' : `👤 ${user?.role?.toUpperCase()}`}
+            </div>
+          </div>
+        </div>
+
         <nav className="sidebar-nav">
           {getAllowedMenuItems(menuItems).map(item => (
             <Link
@@ -79,7 +98,10 @@ const DashboardLayout = () => {
             </Link>
           ))}
 
-
+          <button onClick={logout} className="nav-item" style={{ marginTop: 'auto', color: 'var(--danger)', border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+            <LogOut size={20} />
+            Sair da Conta
+          </button>
         </nav>
       </aside>
 
@@ -93,6 +115,17 @@ const DashboardLayout = () => {
             <input type="text" placeholder="Buscar clientes, leads..." />
           </div>
           <div className="topbar-actions">
+            <button 
+              className="btn btn-outline" 
+              onClick={() => {
+                const res = window.__u3_force_sync?.();
+                alert(res || "Sincronização iniciada!");
+              }}
+              style={{ fontSize: '0.7rem', padding: '4px 8px', borderColor: 'var(--warning)', color: 'var(--warning)' }}
+              title="Clique para forçar o envio de dados locais para a nuvem"
+            >
+              🔄 Forçar Backup
+            </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: 'var(--success)', padding: '4px 12px', backgroundColor: 'rgba(0, 208, 132, 0.1)', borderRadius: 20 }}>
               <CheckCircle size={12} /> <span className="hide-mobile">Sincronizado na Nuvem</span>
             </div>

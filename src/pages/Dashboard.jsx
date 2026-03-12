@@ -11,7 +11,7 @@ const Dashboard = () => {
     const [tasksCount, setTasksCount] = useState({ pendentes: 0, atrasadas: 0, lista: [] });
 
     useEffect(() => {
-        const savedClients = getData('u3_clients_v2', '[]') || [];
+        const savedClients = getData('u3_clients_v2', '[]', 'shared') || [];
         const totalMrr = savedClients.reduce((acc, c) => {
             if (c.status === 'ativo' && c.mrr) {
                 const numberStr = String(c.mrr).replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
@@ -22,10 +22,10 @@ const Dashboard = () => {
         }, 0);
         setMrr(totalMrr);
 
-        const savedLeads = getData('u3_leads', '[]') || [];
+        const savedLeads = getData('u3_leads', '[]', 'shared') || [];
         setLeadsCount(savedLeads.filter(l => l.status === 'Novo' || l.status === 'Novo Lead').length);
 
-        const savedTasks = getData('u3_tarefas', '[]') || [];
+        const savedTasks = getData('u3_tarefas', '[]', 'shared') || [];
         const pendentes = savedTasks.filter(t => t.status === 'pendente' || t.status === 'em_andamento').length;
         const atrasadas = savedTasks.filter(t => {
             if (t.status === 'concluida') return false;
@@ -38,6 +38,21 @@ const Dashboard = () => {
             lista: savedTasks.slice(0, 3)
         });
     }, [getData]);
+
+    // OUVINTE DE ATUALIZAÇÃO DE DADOS EM TEMPO REAL
+    useEffect(() => {
+        const handleDataUpdate = (e) => {
+            const { key, value } = e.detail;
+            if (key === 'u3_tarefas' || key === 'u3_leads' || key === 'u3_clients_v2') {
+                // Força um re-render disparando a lógica de efeito novamente
+                // Como getData já atualizou o localStorage, o efeito acima vai ler o valor novo
+                window.location.reload(); // Simplificado para garantir refresh total do dashboard
+            }
+        };
+
+        window.addEventListener('u3_data_updated', handleDataUpdate);
+        return () => window.removeEventListener('u3_data_updated', handleDataUpdate);
+    }, []);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

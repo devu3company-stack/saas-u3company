@@ -307,7 +307,7 @@ const UsersPage = () => {
                     backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center',
                     justifyContent: 'center', zIndex: 1000, overflowY: 'auto', padding: 20
                 }}>
-                    <div className="card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 550 }}>
+                    <div className="card modal-content" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 550, padding: 24 }}>
                         <h3 style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border-color)' }}>
                             {editingUser ? `Editar: ${editingUser.name}` : 'Adicionar Membro'}
                         </h3>
