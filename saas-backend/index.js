@@ -7,7 +7,7 @@ const { Server } = require('socket.io');
 const ioClient = require('socket.io-client');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
-const db = require('./db');
+const { getData, setData, getUsers, saveUsers } = require('./db-supabase');
 const { searchLeads } = require('./services/puppeteerScraper');
 
 const app = express();
@@ -177,16 +177,11 @@ app.post('/api/meta/capi', async (req, res) => {
 // DATABASE API - DADOS COMPARTILHADOS ENTRE USUARIOS
 //==========================================================
 
-// GET: Busca um dado pelo namespace ("shared" ou "tenant_ID") e pela chave
-app.get('/api/data/:namespace/:key', (req, res) => {
+// GET: Busca um dado pelo namespace e pela chave
+app.get('/api/data/:namespace/:key', async (req, res) => {
     const { namespace, key } = req.params;
     try {
-        let value;
-        if (namespace === 'shared') {
-            value = db.get(`shared.${key}`).value();
-        } else {
-            value = db.get(`tenants.${namespace}.${key}`).value();
-        }
+        const value = await getData(namespace, key);
         res.json({ success: true, value: value !== undefined ? value : null });
     } catch (e) {
         res.json({ success: true, value: null });
@@ -194,19 +189,11 @@ app.get('/api/data/:namespace/:key', (req, res) => {
 });
 
 // POST: Salva um dado pelo namespace e chave
-app.post('/api/data/:namespace/:key', (req, res) => {
+app.post('/api/data/:namespace/:key', async (req, res) => {
     const { namespace, key } = req.params;
     const { value } = req.body;
     try {
-        if (namespace === 'shared') {
-            db.set(`shared.${key}`, value).write();
-        } else {
-            // Garante que o namespace do tenant exista
-            if (!db.get(`tenants.${namespace}`).value()) {
-                db.set(`tenants.${namespace}`, {}).write();
-            }
-            db.set(`tenants.${namespace}.${key}`, value).write();
-        }
+        await setData(namespace, key, value);
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
@@ -214,47 +201,11 @@ app.post('/api/data/:namespace/:key', (req, res) => {
 });
 
 //==========================================================
-// NPS API - Endpoint público para pesquisas NPS
-//==========================================================
-
-// POST: Salva uma resposta NPS no namespace correto
-app.post('/api/nps/:namespace', (req, res) => {
-    const { namespace } = req.params;
-    const { response } = req.body;
-    try {
-        const key = 'u3_nps_responses';
-        let existing;
-        if (namespace === 'shared') {
-            existing = db.get(`shared.${key}`).value() || [];
-        } else {
-            if (!db.get(`tenants.${namespace}`).value()) {
-                db.set(`tenants.${namespace}`, {}).write();
-            }
-            existing = db.get(`tenants.${namespace}.${key}`).value() || [];
-        }
-        existing.push(response);
-        if (namespace === 'shared') {
-            db.set(`shared.${key}`, existing).write();
-        } else {
-            db.set(`tenants.${namespace}.${key}`, existing).write();
-        }
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ success: false, error: e.message });
-    }
-});
-
-// GET: Busca o nome do cliente pelo namespace e ID (para a página pública NPS)
-app.get('/api/nps/:namespace/client/:clientId', (req, res) => {
+// NPS: GET client name
+app.get('/api/nps/:namespace/client/:clientId', async (req, res) => {
     const { namespace, clientId } = req.params;
     try {
-        const key = 'u3_clients_v2';
-        let clients;
-        if (namespace === 'shared') {
-            clients = db.get(`shared.${key}`).value() || [];
-        } else {
-            clients = db.get(`tenants.${namespace}.${key}`).value() || [];
-        }
+        const clients = await getData(namespace, 'u3_clients_v2') || [];
         const client = clients.find(c => c.id.toString() === clientId.toString());
         res.json({ success: true, clientName: client ? client.name : 'Cliente' });
     } catch (e) {
@@ -262,17 +213,40 @@ app.get('/api/nps/:namespace/client/:clientId', (req, res) => {
     }
 });
 
-// GET: Lista todos os usuarios
-app.get('/api/users', (req, res) => {
-    const users = db.get('users').value();
-    res.json({ success: true, users });
+// NPS: POST response  
+app.post('/api/nps/:namespace', async (req, res) => {
+    const { namespace } = req.params;
+    const { response } = req.body;
+    try {
+        const key = 'u3_nps_responses';
+        const existing = await getData(namespace, key) || [];
+        existing.push(response);
+        await setData(namespace, key, existing);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
 });
 
-// POST: Salva a lista completa de usuarios
-app.post('/api/users', (req, res) => {
+// GET all users
+app.get('/api/users', async (req, res) => {
+    try {
+        const users = await getUsers();
+        res.json({ success: true, users });
+    } catch (e) {
+        res.json({ success: true, users: [] });
+    }
+});
+
+// POST: Save all users
+app.post('/api/users', async (req, res) => {
     const { users } = req.body;
-    db.set('users', users).write();
-    res.json({ success: true });
+    try {
+        await saveUsers(users);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
 });
 
 //==========================================================
