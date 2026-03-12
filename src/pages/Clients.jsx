@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus, Filter, Edit2, Trash2 } from 'lucide-react';
 import { useAuth } from '../utils/auth';
+import { useSyncedData } from '../utils/useSyncedData';
 
 const Clients = () => {
-    const { user, getData, setData } = useAuth();
+    const { user } = useAuth();
     const isDesigner = user?.role === 'designer';
     const location = useLocation();
     const [filter, setFilter] = useState('Todos');
@@ -18,28 +19,7 @@ const Clients = () => {
         }
     }, [location]);
 
-    const [clients, setClients] = useState(() => {
-        const data = getData('u3_clients_v2', '[]', 'shared');
-        return Array.isArray(data) ? data : [];
-    });
-
-    const saveClients = (newList) => {
-        setClients(newList);
-        setData('u3_clients_v2', newList, 'shared');
-    };
-
-    // OUVINTE DE ATUALIZAÇÃO DE DADOS EM TEMPO REAL
-    useEffect(() => {
-        const handleDataUpdate = (e) => {
-            const { key, value } = e.detail;
-            if (key === 'u3_clients_v2') {
-                setClients(value);
-            }
-        };
-
-        window.addEventListener('u3_data_updated', handleDataUpdate);
-        return () => window.removeEventListener('u3_data_updated', handleDataUpdate);
-    }, []);
+    const [clients, saveClients] = useSyncedData('u3_clients_v2', [], 'shared');
 
     const parseMrr = (mrr) => {
         return parseFloat(String(mrr || '0').replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;

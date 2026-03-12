@@ -1,50 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../utils/auth';
+import { useSyncedData } from '../utils/useSyncedData';
 import { Plus, CheckCircle, Clock, Calendar, AlertCircle, PlayCircle, StopCircle, User, LayoutGrid, List, Flag, Tag as TagIcon, Paperclip, Image } from 'lucide-react';
 
 const Tarefas = () => {
-    const { user, usersList, getData, setData } = useAuth();
+    const { user, usersList } = useAuth();
 
-    const [tarefas, setTarefas] = useState(() => {
-        return getData('u3_tarefas', '[]', 'shared');
-    });
-
-    // PERSISTÊNCIA MANUAL (Shared para todos verem)
-    const saveTarefas = (newList) => {
-        setTarefas(newList);
-        setData('u3_tarefas', newList, 'shared');
-    };
+    const [tarefas, saveTarefas] = useSyncedData('u3_tarefas', [], 'shared');
 
     const [clientes, setClientes] = useState(['Nenhum / Interno']);
-
     const [clientesData, setClientesData] = useState([]);
 
+    // Clientes também sincronizados via hook interno
+    const [syncedClients] = useSyncedData('u3_clients_v2', [], 'shared');
+
     useEffect(() => {
-        const savedClients = getData('u3_clients_v2', '[]', 'shared');
-        if (Array.isArray(savedClients) && savedClients.length > 0) {
-            setClientesData(savedClients);
-            setClientes(['Nenhum / Interno', ...savedClients.map(c => c.name)]);
+        if (Array.isArray(syncedClients) && syncedClients.length > 0) {
+            setClientesData(syncedClients);
+            setClientes(['Nenhum / Interno', ...syncedClients.map(c => c.name)]);
         } else {
             setClientes(['Nenhum / Interno']);
         }
-    }, [getData]);
-
-    // OUVINTE DE ATUALIZAÇÃO DE DADOS EM TEMPO REAL (Evita cache travado)
-    useEffect(() => {
-        const handleDataUpdate = (e) => {
-            const { key, value } = e.detail;
-            if (key === 'u3_tarefas') {
-                setTarefas(value);
-            }
-            if (key === 'u3_clients_v2') {
-                setClientesData(value);
-                setClientes(['Nenhum / Interno', ...value.map(c => c.name)]);
-            }
-        };
-
-        window.addEventListener('u3_data_updated', handleDataUpdate);
-        return () => window.removeEventListener('u3_data_updated', handleDataUpdate);
-    }, []);
+    }, [syncedClients]);
 
     const isMatrixUser = ['ceo', 'gestor', 'sdr', 'designer', 'financeiro'].includes(user?.role);
     const myTenantId = user?.tenantId || (user?.role === 'cliente_admin' ? user?.id : null);

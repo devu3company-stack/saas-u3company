@@ -1,5 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
+// ============================================================
+// URL DO BACKEND — FONTE ÚNICA DE VERDADE PARA TODOS OS DADOS
+// ============================================================
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://saas-u3company.onrender.com';
 
 const ALL_ROUTES = [
@@ -54,7 +57,20 @@ export const AuthProvider = ({ children }) => {
         } catch { return null; }
     });
 
-    // 1. SAVE USERS
+    // ============================================================
+    // NAMESPACE
+    // ============================================================
+    const getNamespace = useCallback((overrideUser) => {
+        const u = overrideUser || user;
+        if (!u) return 'shared';
+        if (u.id === 1) return 'demo';
+        if (u.role === 'cliente_admin' || u.tenantId) return `tenant_${u.tenantId || u.id}`;
+        return 'shared';
+    }, [user]);
+
+    // ============================================================
+    // SAVE USERS — SEMPRE SALVA NO BACKEND + CACHE LOCAL
+    // ============================================================
     const saveUsers = useCallback((users) => {
         setUsersList(users);
         localStorage.setItem('u3_users_db', JSON.stringify(users));
@@ -65,20 +81,17 @@ export const AuthProvider = ({ children }) => {
         }).catch(() => { });
     }, []);
 
-    // 2. NAMESPACE
-    const getNamespace = useCallback((overrideUser) => {
-        const u = overrideUser || user;
-        if (!u) return 'shared';
-        if (u.id === 1) return 'demo';
-        if (u.role === 'cliente_admin' || u.tenantId) return `tenant_${u.tenantId || u.id}`;
-        return 'shared';
-    }, [user]);
-
-    // 3. SET DATA
+    // ============================================================
+    // setData — SALVA NO BACKEND (FONTE DE VERDADE) + CACHE LOCAL
+    // ============================================================
     const setData = useCallback((key, value, overrideNamespace = null) => {
         const namespace = overrideNamespace || getNamespace();
         const localKey = `${namespace}__${key}`;
-        localStorage.setItem(localKey, JSON.stringify(value));
+
+        // Cache local para UX rápida
+        try { localStorage.setItem(localKey, JSON.stringify(value)); } catch {}
+
+        // BACKEND = FONTE DE VERDADE
         fetch(`${API_BASE}/api/data/${namespace}/${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -86,12 +99,33 @@ export const AuthProvider = ({ children }) => {
         }).catch(() => { });
     }, [getNamespace]);
 
-    // 4. GET DATA
+    // ============================================================
+    // getData — BUSCA DO BACKEND PRIMEIRO, CACHE LOCAL COMO FALLBACK
+    // Retorna cache local IMEDIATAMENTE para não bloquear a UI,
+    // mas SEMPRE faz fetch no backend e atualiza via evento se houver diferença.
+    // ============================================================
     const getData = useCallback((key, fallback = null, overrideNamespace = null) => {
-        const baseNamespace = getNamespace();
-        const namespace = overrideNamespace || baseNamespace;
+        const namespace = overrideNamespace || getNamespace();
         const localKey = `${namespace}__${key}`;
 
+        // PASSO 1: Dispara busca no backend IMEDIATAMENTE (assíncrono)
+        fetch(`${API_BASE}/api/data/${namespace}/${key}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.value !== null) {
+                    const newValue = JSON.stringify(data.value);
+                    const currentCache = localStorage.getItem(localKey);
+                    // Atualiza cache local e notifica componentes SE o backend tiver dados diferentes
+                    if (currentCache !== newValue) {
+                        localStorage.setItem(localKey, newValue);
+                        window.dispatchEvent(new CustomEvent('u3_data_updated', {
+                            detail: { key, namespace, value: data.value }
+                        }));
+                    }
+                }
+            }).catch(() => { });
+
+        // PASSO 2: Retorna cache local para renderização IMEDIATA (sem esperar backend)
         try {
             const cached = localStorage.getItem(localKey);
             if (cached !== null) {
@@ -99,30 +133,7 @@ export const AuthProvider = ({ children }) => {
             }
         } catch { }
 
-        // MIGRATION FALLBACK
-        if (namespace === 'shared' || namespace === 'demo' || namespace.startsWith('tenant_')) {
-            try {
-                const legacy = localStorage.getItem(key);
-                if (legacy !== null) {
-                    const parsed = JSON.parse(legacy);
-                    localStorage.setItem(localKey, legacy);
-                    return parsed;
-                }
-            } catch { }
-        }
-
-        fetch(`${API_BASE}/api/data/${namespace}/${key}`)
-            .then(r => r.json())
-            .then(data => {
-                if (data.success && data.value !== null) {
-                    const newValue = JSON.stringify(data.value);
-                    if (localStorage.getItem(localKey) !== newValue) {
-                        localStorage.setItem(localKey, newValue);
-                        window.dispatchEvent(new CustomEvent('u3_data_updated', { detail: { key, namespace, value: data.value } }));
-                    }
-                }
-            }).catch(() => { });
-
+        // PASSO 3: Fallback padrão
         if (fallback === null) return null;
         if (typeof fallback === 'string') {
             try { return JSON.parse(fallback); } catch { return fallback; }
@@ -130,74 +141,27 @@ export const AuthProvider = ({ children }) => {
         return fallback;
     }, [getNamespace]);
 
-    // 5. SYNC & RESCUE
+    // ============================================================
+    // SYNC USERS NO BOOT — UMA ÚNICA VEZ
+    // ============================================================
     useEffect(() => {
-        const syncUsers = async () => {
+        const syncUsersOnBoot = async () => {
             try {
                 const r = await fetch(`${API_BASE}/api/users`);
                 const data = await r.json();
 
-                if (data.success && Array.isArray(data.users)) {
-                    const currentLocalRaw = localStorage.getItem('u3_users_db');
-                    const currentLocalUsers = currentLocalRaw ? JSON.parse(currentLocalRaw) : INITIAL_USERS;
-                    const localHasCustom = currentLocalUsers.length > INITIAL_USERS.length;
-                    const remoteHasCustom = data.users.length > INITIAL_USERS.length;
-
-                    if (remoteHasCustom || (data.users.length > 0 && !localHasCustom)) {
-                        setUsersList(data.users);
-                        localStorage.setItem('u3_users_db', JSON.stringify(data.users));
-                    } else if (localHasCustom && data.users.length <= INITIAL_USERS.length) {
-                        saveUsers(currentLocalUsers);
-                    }
+                if (data.success && Array.isArray(data.users) && data.users.length > 0) {
+                    setUsersList(data.users);
+                    localStorage.setItem('u3_users_db', JSON.stringify(data.users));
                 }
-            } catch (err) { }
+            } catch { }
         };
+        syncUsersOnBoot();
+    }, []);
 
-        syncUsers();
-        
-        const rescueLegacy = () => {
-            try {
-                const keysToRescue = ['clients_v2', 'tarefas', 'leads', 'users_db'];
-                keysToRescue.forEach(key => {
-                    const val = localStorage.getItem(key) || localStorage.getItem('u3_' + key);
-                    if (val) {
-                        try {
-                            const parsed = JSON.parse(val);
-                            const finalKey = key === 'users_db' ? 'u3_users_db' : 'u3_' + key;
-                            
-                            if (key === 'users_db') {
-                                const current = JSON.parse(localStorage.getItem('u3_users_db') || '[]');
-                                const merged = [...current];
-                                parsed.forEach(u => {
-                                    if (!merged.find(m => m.email === u.email)) merged.push(u);
-                                });
-                                saveUsers(merged);
-                            } else {
-                                const ns = 'shared';
-                                localStorage.setItem(`${ns}__${finalKey}`, JSON.stringify(parsed));
-                                fetch(`${API_BASE}/api/data/${ns}/${finalKey}`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ value: parsed })
-                                }).catch(() => {});
-                            }
-                            localStorage.removeItem(key);
-                            localStorage.removeItem('u3_' + key);
-                        } catch (e) {}
-                    }
-                });
-            } catch (e) {}
-        };
-        rescueLegacy();
-
-        window.__u3_force_sync = () => {
-             const currentList = JSON.parse(localStorage.getItem('u3_users_db') || '[]');
-             saveUsers(currentList);
-             return "Sincronização enviada!";
-        };
-    }, [saveUsers]);
-
-    // UI FILTERS
+    // ============================================================
+    // USERS LIST FILTRADA POR TENANT
+    // ============================================================
     const filteredUsersList = usersList.filter(u => {
         if (!user) return false;
         if (user.id === 1) return u.id === 1 || !u.tenantId;
@@ -209,6 +173,9 @@ export const AuthProvider = ({ children }) => {
         return true;
     });
 
+    // ============================================================
+    // AUTH FUNCS
+    // ============================================================
     const getUserPermissions = (targetUser) => {
         if (!targetUser) return [];
         if (targetUser.customPermissions && targetUser.customPermissions.length > 0) {
@@ -222,11 +189,8 @@ export const AuthProvider = ({ children }) => {
         if (!found) return { success: false, error: 'E-mail ou senha inválidos.' };
 
         const userData = {
-            id: found.id,
-            email: found.email,
-            name: found.name,
-            role: found.role,
-            tenantId: found.tenantId || null,
+            id: found.id, email: found.email, name: found.name,
+            role: found.role, tenantId: found.tenantId || null,
             customPermissions: found.customPermissions || null
         };
         localStorage.setItem('u3_user', JSON.stringify(userData));
@@ -255,8 +219,7 @@ export const AuthProvider = ({ children }) => {
     const createUser = (newUser) => {
         const id = Date.now();
         const tenantId = user && (user.role === 'cliente_admin' || user.tenantId)
-            ? (user.tenantId || user.id)
-            : null;
+            ? (user.tenantId || user.id) : null;
         const updated = [...usersList, { ...newUser, id, tenantId }];
         saveUsers(updated);
         return { success: true };
@@ -286,13 +249,25 @@ export const AuthProvider = ({ children }) => {
         return updateUser(user.id, { password: newPassword });
     };
 
+    const removeData = useCallback((key, overrideNamespace = null) => {
+        const namespace = overrideNamespace || getNamespace();
+        const localKey = `${namespace}__${key}`;
+        localStorage.removeItem(localKey);
+    }, [getNamespace]);
+
+    const clearData = useCallback((overrideNamespace = null) => {
+        const namespace = overrideNamespace || getNamespace();
+        const prefix = `${namespace}__`;
+        Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
+    }, [getNamespace]);
+
     return (
         <AuthContext.Provider value={{
             user, login, logout, hasPermission, getAllowedMenuItems,
             usersList: filteredUsersList, createUser, updateUser, deleteUser, getUserPermissions,
-            changePassword,
-            PERMISSIONS: ROLE_PRESETS, ALL_ROUTES,
-            getData, setData, removeData: (key) => localStorage.removeItem(key), clearData: () => localStorage.clear()
+            changePassword, PERMISSIONS: ROLE_PRESETS, ALL_ROUTES,
+            getData, setData, removeData, clearData,
+            getStorageKey: (key) => `${getNamespace()}__${key}`
         }}>
             {children}
         </AuthContext.Provider>

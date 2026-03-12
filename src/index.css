@@ -52,6 +52,9 @@ button {
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sidebar-brand {
@@ -67,8 +70,10 @@ button {
 
 .sidebar-nav {
   padding: 16px 0;
+  padding-bottom: 80px;
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-item {
@@ -175,8 +180,11 @@ button {
     top: 0;
     left: -260px;
     height: 100vh;
+    height: 100dvh;
     z-index: 1000;
     transition: left 0.3s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .sidebar.open {

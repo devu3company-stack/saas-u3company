@@ -1,35 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Target, MessageCircle, Calendar, Plus, Link as LinkIcon, AlertTriangle, MessageSquare, Edit } from 'lucide-react';
 import { useAuth } from '../utils/auth';
+import { useSyncedData } from '../utils/useSyncedData';
 
 const Leads = () => {
-    const { getData, setData } = useAuth();
-    const [pipeline, setPipeline] = useState(() => {
-        return getData('u3_leads', '[]');
-    });
+    const [pipeline, saveLeads] = useSyncedData('u3_leads', [], 'shared');
 
     const [showWebhook, setShowWebhook] = useState(false);
     const [editLead, setEditLead] = useState(null);
-    const [currentView, setCurrentView] = useState('pipeline'); // 'pipeline' | 'followup'
-
-    // PERSISTÊNCIA MANUAL
-    const saveLeads = (newList) => {
-        setPipeline(newList);
-        setData('u3_leads', newList, 'shared');
-    };
-
-    // OUVINTE DE ATUALIZAÇÃO DE DADOS EM TEMPO REAL
-    useEffect(() => {
-        const handleDataUpdate = (e) => {
-            const { key, value } = e.detail;
-            if (key === 'u3_leads') {
-                setPipeline(value);
-            }
-        };
-
-        window.addEventListener('u3_data_updated', handleDataUpdate);
-        return () => window.removeEventListener('u3_data_updated', handleDataUpdate);
-    }, []);
+    const [currentView, setCurrentView] = useState('pipeline');
 
     const handleDragStart = (e, leadId) => {
         e.dataTransfer.setData('leadId', leadId);

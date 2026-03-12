@@ -2,57 +2,33 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Target, DollarSign, Calendar, AlertTriangle, MessageSquare, CheckSquare, Activity, ArrowUpRight, ArrowDownRight, Users, Clock, Smile } from 'lucide-react';
 import { useAuth } from '../utils/auth';
+import { useSyncedData } from '../utils/useSyncedData';
 
 const Dashboard = () => {
-    const { user, getData } = useAuth();
+    const { user } = useAuth();
     const isDesigner = user?.role === 'designer';
-    const [leadsCount, setLeadsCount] = useState(0);
-    const [mrr, setMrr] = useState(0);
-    const [tasksCount, setTasksCount] = useState({ pendentes: 0, atrasadas: 0, lista: [] });
 
-    useEffect(() => {
-        const savedClients = getData('u3_clients_v2', '[]', 'shared') || [];
-        const totalMrr = savedClients.reduce((acc, c) => {
-            if (c.status === 'ativo' && c.mrr) {
-                const numberStr = String(c.mrr).replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                const val = parseFloat(numberStr) || 0;
-                return acc + val;
-            }
-            return acc;
-        }, 0);
-        setMrr(totalMrr);
+    const [savedClients] = useSyncedData('u3_clients_v2', [], 'shared');
+    const [savedLeads] = useSyncedData('u3_leads', [], 'shared');
+    const [savedTasks] = useSyncedData('u3_tarefas', [], 'shared');
 
-        const savedLeads = getData('u3_leads', '[]', 'shared') || [];
-        setLeadsCount(savedLeads.filter(l => l.status === 'Novo' || l.status === 'Novo Lead').length);
+    const mrr = (savedClients || []).reduce((acc, c) => {
+        if (c.status === 'ativo' && c.mrr) {
+            const numberStr = String(c.mrr).replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+            return acc + (parseFloat(numberStr) || 0);
+        }
+        return acc;
+    }, 0);
 
-        const savedTasks = getData('u3_tarefas', '[]', 'shared') || [];
-        const pendentes = savedTasks.filter(t => t.status === 'pendente' || t.status === 'em_andamento').length;
-        const atrasadas = savedTasks.filter(t => {
-            if (t.status === 'concluida') return false;
-            return new Date(t.dataEntrega) < new Date();
-        }).length;
+    const leadsCount = (savedLeads || []).filter(l => l.status === 'Novo' || l.status === 'Novo Lead').length;
 
-        setTasksCount({
-            pendentes,
-            atrasadas,
-            lista: savedTasks.slice(0, 3)
-        });
-    }, [getData]);
-
-    // OUVINTE DE ATUALIZAÇÃO DE DADOS EM TEMPO REAL
-    useEffect(() => {
-        const handleDataUpdate = (e) => {
-            const { key, value } = e.detail;
-            if (key === 'u3_tarefas' || key === 'u3_leads' || key === 'u3_clients_v2') {
-                // Força um re-render disparando a lógica de efeito novamente
-                // Como getData já atualizou o localStorage, o efeito acima vai ler o valor novo
-                window.location.reload(); // Simplificado para garantir refresh total do dashboard
-            }
-        };
-
-        window.addEventListener('u3_data_updated', handleDataUpdate);
-        return () => window.removeEventListener('u3_data_updated', handleDataUpdate);
-    }, []);
+    const allTasks = savedTasks || [];
+    const pendentes = allTasks.filter(t => t.status === 'pendente' || t.status === 'em_andamento').length;
+    const atrasadas = allTasks.filter(t => {
+        if (t.status === 'concluida') return false;
+        return new Date(t.dataEntrega) < new Date();
+    }).length;
+    const tasksCount = { pendentes, atrasadas, lista: allTasks.slice(0, 3) };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
