@@ -23,6 +23,7 @@ import WhiteLabel from './pages/WhiteLabel';
 import Prospecting from './pages/Prospecting';
 import MetaTracking from './pages/MetaTracking';
 import UsersPage from './pages/UsersPage';
+import MigrateData from './pages/MigrateData';
 
 import NpsSurvey from './pages/NpsSurvey';
 
@@ -60,6 +61,7 @@ function App() {
             <Route path="templates" element={<Templates />} />
             <Route path="whitelabel" element={<WhiteLabel />} />
             <Route path="/equipe" element={<UsersPage />} />
+            <Route path="/migrar" element={<MigrateData />} />
           </Route>
         </Routes>
       </Router>
