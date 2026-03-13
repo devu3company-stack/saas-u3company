@@ -175,7 +175,7 @@ const Clients = () => {
                     </table>
 
                     {/* Versão Mobile (Cards) */}
-                    <div className="show-mobile-only" style={{ display: 'none' }}>
+                    <div className="show-mobile-only">
                         {filtered.map(client => (
                             <div key={client.id} style={{ padding: 16, borderBottom: '1px solid var(--border-color)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
