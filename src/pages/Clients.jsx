@@ -19,7 +19,7 @@ const Clients = () => {
         }
     }, [location]);
 
-    const [clients, saveClients] = useSyncedData('u3_clients_v2', [], 'shared');
+    const [clients, saveClients] = useSyncedData('u3_clients_v2', []);
 
     const parseMrr = (mrr) => {
         return parseFloat(String(mrr || '0').replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;

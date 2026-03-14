@@ -4,7 +4,7 @@ import { useAuth } from '../utils/auth';
 import { useSyncedData } from '../utils/useSyncedData';
 
 const Leads = () => {
-    const [pipeline, saveLeads] = useSyncedData('u3_leads', [], 'shared');
+    const [pipeline, saveLeads] = useSyncedData('u3_leads', []);
 
     const [showWebhook, setShowWebhook] = useState(false);
     const [editLead, setEditLead] = useState(null);

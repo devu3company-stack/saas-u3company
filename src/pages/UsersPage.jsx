@@ -24,6 +24,12 @@ const UsersPage = () => {
     const [filterType, setFilterType] = useState('todos'); // 'todos', 'matriz', 'tenants'
 
     const isCeo = currentUser?.role === 'ceo';
+    const isTenantUser = currentUser?.role === 'cliente_admin' || !!currentUser?.tenantId;
+
+    // Papéis disponíveis para criação de usuários
+    const availableRoles = isTenantUser
+        ? Object.fromEntries(Object.entries(ROLE_LABELS).filter(([k]) => k !== 'cliente_admin' && k !== 'ceo'))
+        : ROLE_LABELS;
 
     const openCreateModal = () => {
         setEditingUser(null);
@@ -335,7 +341,7 @@ const UsersPage = () => {
                             <div className="form-group">
                                 <label className="form-label">Cargo (Preset de Permissões)</label>
                                 <select className="form-control" value={selectedRole} onChange={(e) => handleRoleChange(e.target.value)}>
-                                    {Object.entries(ROLE_LABELS).map(([key, label]) => (
+                                    {Object.entries(availableRoles).map(([key, label]) => (
                                         <option key={key} value={key}>{label}</option>
                                     ))}
                                 </select>

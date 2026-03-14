@@ -6,13 +6,13 @@ import { Plus, CheckCircle, Clock, Calendar, AlertCircle, PlayCircle, StopCircle
 const Tarefas = () => {
     const { user, usersList } = useAuth();
 
-    const [tarefas, saveTarefas] = useSyncedData('u3_tarefas', [], 'shared');
+    const [tarefas, saveTarefas] = useSyncedData('u3_tarefas', []);
 
     const [clientes, setClientes] = useState(['Nenhum / Interno']);
     const [clientesData, setClientesData] = useState([]);
 
     // Clientes também sincronizados via hook interno
-    const [syncedClients] = useSyncedData('u3_clients_v2', [], 'shared');
+    const [syncedClients] = useSyncedData('u3_clients_v2', []);
 
     useEffect(() => {
         if (Array.isArray(syncedClients) && syncedClients.length > 0) {

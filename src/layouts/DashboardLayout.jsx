@@ -7,6 +7,7 @@ const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, getAllowedMenuItems, getData, setData } = useAuth();
+  // Logo isolada por tenant: cada empresa tem a sua
   const [logo, setLogo] = useState(() => getData('u3_logo', ''));
   const fileInputRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

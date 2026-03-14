@@ -8,9 +8,9 @@ const Dashboard = () => {
     const { user } = useAuth();
     const isDesigner = user?.role === 'designer';
 
-    const [savedClients] = useSyncedData('u3_clients_v2', [], 'shared');
-    const [savedLeads] = useSyncedData('u3_leads', [], 'shared');
-    const [savedTasks] = useSyncedData('u3_tarefas', [], 'shared');
+    const [savedClients] = useSyncedData('u3_clients_v2', []);
+    const [savedLeads] = useSyncedData('u3_leads', []);
+    const [savedTasks] = useSyncedData('u3_tarefas', []);
 
     const mrr = (savedClients || []).reduce((acc, c) => {
         if (c.status === 'ativo' && c.mrr) {

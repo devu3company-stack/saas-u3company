@@ -22,11 +22,13 @@ const ALL_ROUTES = [
     { path: '/tarefas', label: 'Tarefas da Equipe' },
     { path: '/docs', label: 'Docs & Senhas' },
     { path: '/whitelabel', label: 'White-Label (SaaS)' },
+    { path: '/migrar', label: 'Migração de Dados' },
 ];
 
 const ROLE_PRESETS = {
     ceo: ALL_ROUTES.map(r => r.path),
-    cliente_admin: ALL_ROUTES.filter(r => r.path !== '/whitelabel').map(r => r.path),
+    // cliente_admin: ambiente isolado do tenant (não acessa whitelabel)
+    cliente_admin: ALL_ROUTES.filter(r => !['/whitelabel'].includes(r.path)).map(r => r.path),
     gestor: ['/dashboard', '/clientes', '/leads', '/prospeccao', '/reunioes', '/trafego', '/tracking', '/academy', '/metas', '/tarefas'],
     financeiro: ['/dashboard', '/clientes', '/metas', '/configuracoes', '/financeiro'],
     sdr: ['/dashboard', '/clientes', '/leads', '/prospeccao', '/reunioes', '/tarefas'],
@@ -58,13 +60,19 @@ export const AuthProvider = ({ children }) => {
     });
 
     // ============================================================
-    // NAMESPACE
+    // NAMESPACE — Isolamento por Tenant (Multi-Tenant)
+    // CEO, gestor e equipe matriz → 'shared'
+    // Usuário demo → 'demo'
+    // cliente_admin e membros do tenant → 'tenant_<tenantId>'
     // ============================================================
     const getNamespace = useCallback((overrideUser) => {
         const u = overrideUser || user;
         if (!u) return 'shared';
         if (u.id === 1) return 'demo';
-        if (u.role === 'cliente_admin' || u.tenantId) return `tenant_${u.tenantId || u.id}`;
+        // Tenant: cliente_admin OU qualquer membro com tenantId
+        if (u.role === 'cliente_admin') return `tenant_${u.id}`;
+        if (u.tenantId) return `tenant_${u.tenantId}`;
+        // Matriz (CEO, gestor, SDR, etc.) → namespace compartilhado
         return 'shared';
     }, [user]);
 
@@ -90,6 +98,11 @@ export const AuthProvider = ({ children }) => {
 
         // Cache local para UX rápida
         try { localStorage.setItem(localKey, JSON.stringify(value)); } catch {}
+
+        // Notifica outros componentes que ouvem este key/namespace
+        window.dispatchEvent(new CustomEvent('u3_data_updated', {
+            detail: { key, namespace, value }
+        }));
 
         // BACKEND = FONTE DE VERDADE
         fetch(`${API_BASE}/api/data/${namespace}/${key}`, {
@@ -161,16 +174,26 @@ export const AuthProvider = ({ children }) => {
 
     // ============================================================
     // USERS LIST FILTRADA POR TENANT
+    // CEO vê TODOS os usuários (para gerenciamento)
+    // cliente_admin vê apenas si mesmo e membros do SEU tenant
+    // Membro de tenant vê apenas membros do seu tenant
+    // Outros papéis da matriz veem apenas a equipe da matriz
     // ============================================================
     const filteredUsersList = usersList.filter(u => {
         if (!user) return false;
-        if (user.id === 1) return u.id === 1 || !u.tenantId;
-        if (user.role === 'ceo' || user.role === 'gestor') return true;
-        if (user.role === 'cliente_admin' || user.tenantId) {
-            const myTenantId = user.tenantId || user.id;
+        // CEO: vê tudo (gestão completa)
+        if (user.role === 'ceo') return true;
+        // cliente_admin: vê apenas seu tenant
+        if (user.role === 'cliente_admin') {
+            const myTenantId = user.id;
             return u.id === myTenantId || u.tenantId === myTenantId;
         }
-        return true;
+        // Membro de tenant (tenantId definido): vê apenas seu tenant
+        if (user.tenantId) {
+            return u.id === user.tenantId || u.tenantId === user.tenantId;
+        }
+        // Equipe da matriz (gestor, SDR, etc.): vê equipe sem tenantId e sem cliente_admin
+        return !u.tenantId && u.role !== 'cliente_admin';
     });
 
     // ============================================================
@@ -193,6 +216,22 @@ export const AuthProvider = ({ children }) => {
             role: found.role, tenantId: found.tenantId || null,
             customPermissions: found.customPermissions || null
         };
+
+        // Calcula o namespace deste usuário
+        const newNamespace = getNamespace(userData);
+
+        // Remove do localStorage dados cacheados de OUTROS namespaces (isolamento)
+        // Isso impede que um cliente_admin veja dados cacheados do CEO (shared) e vice-versa
+        try {
+            const keysToRemove = Object.keys(localStorage).filter(k => {
+                if (!k.includes('__')) return false; // não é chave de dados
+                if (k === 'u3_user' || k === 'u3_users_db') return false; // preserva sessão e users
+                const keyNs = k.split('__')[0];
+                return keyNs !== newNamespace; // remove cache de outros namespaces
+            });
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+        } catch { }
+
         localStorage.setItem('u3_user', JSON.stringify(userData));
         setUser(userData);
         return { success: true, user: userData };
@@ -218,9 +257,14 @@ export const AuthProvider = ({ children }) => {
 
     const createUser = (newUser) => {
         const id = Date.now();
-        const tenantId = user && (user.role === 'cliente_admin' || user.tenantId)
-            ? (user.tenantId || user.id) : null;
-        const updated = [...usersList, { ...newUser, id, tenantId }];
+        // Quem cria: cliente_admin → novos membros pertencem ao seu tenant
+        // CEO/Matriz → pode criar cliente_admin (sem tenantId) ou membros da matriz
+        const isTenantAdmin = user && (user.role === 'cliente_admin' || user.tenantId);
+        const myTenantId = user?.tenantId || (user?.role === 'cliente_admin' ? user.id : null);
+        // Membro do tenant não pode criar outro cliente_admin
+        const role = isTenantAdmin && newUser.role === 'cliente_admin' ? 'gestor' : newUser.role;
+        const tenantId = isTenantAdmin ? myTenantId : null; // null = equipe da matriz
+        const updated = [...usersList, { ...newUser, id, role, tenantId }];
         saveUsers(updated);
         return { success: true };
     };
@@ -261,13 +305,18 @@ export const AuthProvider = ({ children }) => {
         Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
     }, [getNamespace]);
 
+    // Namespace calculado ao vivo (reativo ao user)
+    const currentNamespace = getNamespace();
+
     return (
         <AuthContext.Provider value={{
             user, login, logout, hasPermission, getAllowedMenuItems,
             usersList: filteredUsersList, createUser, updateUser, deleteUser, getUserPermissions,
             changePassword, PERMISSIONS: ROLE_PRESETS, ALL_ROUTES,
             getData, setData, removeData, clearData,
-            getStorageKey: (key) => `${getNamespace()}__${key}`
+            getNamespace,
+            namespace: currentNamespace,
+            getStorageKey: (key) => `${currentNamespace}__${key}`
         }}>
             {children}
         </AuthContext.Provider>
