@@ -6,23 +6,33 @@ import { useAuth } from '../utils/auth';
 const Login = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
-    const [email, setEmail] = useState('demo@u3company.com');
-    const [password, setPassword] = useState('demo');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-        const result = login(email, password);
-        if (result.success) {
-            // Redireciona com base no role
-            if (result.user.role === 'cliente') {
-                navigate('/trafego');
+        
+        try {
+            const result = await login(email, password);
+            if (result.success) {
+                // Se houver um callback na URL (ex: redirecionado do extrator), volta pra lá
+                const params = new URLSearchParams(window.location.search);
+                const callback = params.get('callback');
+                
+                if (callback) {
+                    navigate(callback);
+                } else if (result.user.role === 'cliente') {
+                    navigate('/trafego');
+                } else {
+                    navigate('/dashboard');
+                }
             } else {
-                navigate('/dashboard');
+                setError(result.error);
             }
-        } else {
-            setError(result.error);
+        } catch (err) {
+            setError('Falha na comunicação com o servidor de autenticação.');
         }
     };
 
@@ -59,9 +69,8 @@ const Login = () => {
                     </button>
                 </form>
 
-                <div style={{ marginTop: 24, padding: 16, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    <p style={{ fontWeight: 600, marginBottom: 8, color: 'var(--text-main)' }}>Acesso de demonstração:</p>
-                    <p>👑 Admin: <strong>demo@u3company.com</strong> / demo</p>
+                <div style={{ marginTop: 24, padding: 16, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                    <p style={{ color: 'var(--text-muted)' }}>© 2026 U3 Company. Todos os direitos reservados.</p>
                 </div>
             </div>
         </div>

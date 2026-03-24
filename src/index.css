@@ -43,6 +43,7 @@ button {
 .app-container {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -137,6 +138,13 @@ button {
   flex: 1;
   overflow-y: auto;
   padding: 32px;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px;
+  }
 }
 
 .topbar-menu-btn {
@@ -310,6 +318,18 @@ button {
 
   .show-mobile-only {
     display: block !important;
+  }
+
+  .tabs, .filter-bar {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+  }
+
+  .tabs::-webkit-scrollbar, .filter-bar::-webkit-scrollbar {
+    display: none;
   }
 }
 

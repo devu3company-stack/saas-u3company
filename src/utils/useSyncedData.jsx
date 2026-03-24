@@ -1,84 +1,83 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './auth';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://saas-u3company.onrender.com';
+import { db } from './firebase';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 
 /**
- * Hook MULTI-TENANT para dados sincronizados com o backend.
+ * Hook MULTI-TENANT para dados sincronizados em TEMPO REAL com Firebase Firestore.
  *
- * Usa o `namespace` exposto pelo AuthContext (calculado ao vivo a partir do user)
- * para garantir que cada tenant acesse APENAS os seus próprios dados.
- *
- * - CEO/Gestor/SDR/Designer → namespace 'shared'
- * - cliente_admin → namespace 'tenant_<id>'
- * - Membro de tenant → namespace 'tenant_<tenantId>'
+ * Utiliza o `namespace` da sessão para isolar dados entre agências/clientes.
  *
  * USO:
  *   const [clients, saveClients] = useSyncedData('u3_clients_v2', []);
  */
 export function useSyncedData(key, fallback = [], overrideNamespace = null) {
-    const { namespace: autoNamespace, setData } = useAuth();
-
-    // Namespace efetivo: override explícito OU namespace automático do user logado
+    const { namespace: autoNamespace } = useAuth();
     const ns = overrideNamespace !== null ? overrideNamespace : autoNamespace;
 
     const [data, setLocalData] = useState(fallback);
-    const hasFetched = useRef(false);
+    const hasInitialData = useRef(false);
 
-    // Sempre que o namespace ou chave mudar, re-busca do backend
     useEffect(() => {
-        hasFetched.current = false;
+        if (!ns || !key) return;
 
-        // Tenta ler do localStorage (cache local instantâneo)
+        // Referência do documento no Firestore: Coleção 'crm_data' -> Documento '[namespace]__[key]'
+        const docRef = doc(db, "crm_data", `${ns}__${key}`);
+
+        // Tenta ler do localStorage primeiro para carregamento instantâneo (UI rápida)
         const localKey = `${ns}__${key}`;
         try {
             const cached = localStorage.getItem(localKey);
-            if (cached !== null) {
-                try {
-                    const parsed = JSON.parse(cached);
-                    setLocalData(parsed);
-                } catch { }
-            } else {
-                // Se não há cache pra este namespace, começa com fallback limpo
-                setLocalData(fallback);
+            if (cached !== null && !hasInitialData.current) {
+                setLocalData(JSON.parse(cached));
             }
-        } catch { }
+        } catch (e) { }
 
-        // Busca do backend (fonte de verdade)
-        fetch(`${API_BASE}/api/data/${ns}/${key}`)
-            .then(r => r.json())
-            .then(result => {
-                if (result.success && result.value !== null && result.value !== undefined) {
-                    // Atualiza cache local e estado
-                    try { localStorage.setItem(localKey, JSON.stringify(result.value)); } catch { }
-                    setLocalData(result.value);
-                } else if (!hasFetched.current) {
-                    // Backend não tem dados para este namespace → usa fallback limpo
+        // SUBSCRIPTION REAL-TIME (onSnapshot)
+        // Isso resolve o problema de não atualizar em outras máquinas
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const cloudData = docSnap.data().value;
+                setLocalData(cloudData);
+                // Atualiza o cache local para o próximo carregamento rápido
+                try { localStorage.setItem(localKey, JSON.stringify(cloudData)); } catch (e) { }
+            } else {
+                // Se documento não existe na nuvem, mantém o local ou volta pro fallback
+                if (!hasInitialData.current) {
                     setLocalData(fallback);
                 }
-                hasFetched.current = true;
-            })
-            .catch(() => {
-                hasFetched.current = true;
-            });
-
-        // Ouve atualizações vindas de outros hooks/componentes para o mesmo key
-        const handleUpdate = (e) => {
-            if (e.detail.key === key && e.detail.namespace === ns) {
-                setLocalData(e.detail.value);
             }
-        };
-        window.addEventListener('u3_data_updated', handleUpdate);
-        return () => window.removeEventListener('u3_data_updated', handleUpdate);
+            hasInitialData.current = true;
+        }, (error) => {
+            console.error(`Erro ao sincronizar Firestore (${key}):`, error);
+        });
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        return () => unsubscribe();
     }, [key, ns]);
 
-    // Função para salvar (backend + cache local + notifica outros componentes)
-    const save = useCallback((newValue) => {
+    // Função para salvar (Sincroniza com Firestore na nuvem)
+    const save = useCallback(async (newValue) => {
+        if (!ns || !key) return;
+
+        // Atualiza UI local imediatamente
         setLocalData(newValue);
-        setData(key, newValue, ns);
-    }, [key, ns, setData]);
+        
+        // Persiste no cache local
+        try { localStorage.setItem(`${ns}__${key}`, JSON.stringify(newValue)); } catch (e) { }
+
+        // Persiste no Firestore (vai refletir em todas as outras máquinas via onSnapshot)
+        try {
+            const docRef = doc(db, "crm_data", `${ns}__${key}`);
+            await setDoc(docRef, { 
+                value: newValue,
+                updatedAt: new Date().toISOString(),
+                namespace: ns,
+                key: key
+            });
+        } catch (error) {
+            console.error(`Erro ao salvar no Firestore (${key}):`, error);
+        }
+    }, [key, ns]);
 
     return [data, save];
 }

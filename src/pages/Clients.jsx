@@ -100,23 +100,29 @@ const Clients = () => {
             </div>
 
             <div className="card" style={{ padding: 0 }}>
-                <div style={{ padding: '16px 24px', display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)' }}>
-                    <Filter size={20} color="var(--text-muted)" style={{ marginRight: 8 }} />
-                    {['Todos', 'Ativo', 'Pausado', 'Cancelado'].map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            style={{
-                                padding: '4px 12px',
-                                borderRadius: '16px',
-                                backgroundColor: filter === f ? 'var(--bg-tertiary)' : 'transparent',
-                                color: filter === f ? 'var(--text-main)' : 'var(--text-muted)',
-                                border: `1px solid ${filter === f ? 'var(--border-color)' : 'transparent'}`
-                            }}
-                        >
-                            {f}
-                        </button>
-                    ))}
+                <div className="filter-bar" style={{ padding: '16px 24px', display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)', alignItems: 'center' }}>
+                    <Filter size={18} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {['Todos', 'Ativo', 'Pausado', 'Cancelado'].map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setFilter(f)}
+                                style={{
+                                    padding: '6px 16px',
+                                    borderRadius: '20px',
+                                    backgroundColor: filter === f ? 'var(--accent-color)' : 'var(--bg-tertiary)',
+                                    color: filter === f ? 'var(--bg-primary)' : 'var(--text-muted)',
+                                    border: 'none',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {f}
+                            </button>
+                        ))}
+                    </div>
                 </div>
                 <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
                     {/* Versão Desktop (Tabela) */}
@@ -174,28 +180,53 @@ const Clients = () => {
                         </tbody>
                     </table>
 
-                    {/* Versão Mobile (Cards) */}
-                    <div className="show-mobile-only">
-                        {filtered.map(client => (
-                            <div key={client.id} style={{ padding: 16, borderBottom: '1px solid var(--border-color)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <div style={{ fontWeight: 700, fontSize: '1rem' }}>{client.name}</div>
-                                    <span className={`badge ${client.status}`} style={{ fontSize: '0.65rem' }}>{client.status.toUpperCase()}</span>
-                                </div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-                                    {client.contato} | Responsável: {client.responsavel}
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    {!isDesigner && (
-                                        <div style={{ fontWeight: 600, color: 'var(--success)' }}>{client.mrr}</div>
-                                    )}
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <Link to={`/clientes/${client.id}`} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.7rem' }}>360°</Link>
-                                        <button className="btn btn-outline" style={{ padding: '4px 8px' }} onClick={() => handleEdit(client)}><Edit2 size={14} /></button>
+                    {/* Mobile Card Version */}
+                    <div className="show-mobile-only" style={{ padding: 16 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            {filtered.map(client => (
+                                <div key={client.id} className="card" style={{ padding: 16, borderLeft: `4px solid ${client.status === 'ativo' ? 'var(--success)' : client.status === 'pausado' ? 'var(--text-muted)' : 'var(--danger)'}` }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                        <div>
+                                            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>{client.name}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                                                👤 {client.responsavel}
+                                            </div>
+                                        </div>
+                                        <span className={`badge ${client.status}`} style={{ fontSize: '0.6rem', padding: '4px 8px' }}>
+                                            {client.status.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div style={{ padding: '12px 0', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                        <div style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{ color: 'var(--text-muted)', width: 60 }}>Contato:</span> <span>{client.contato}</span>
+                                        </div>
+                                        {!isDesigner && (
+                                            <div style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ color: 'var(--text-muted)', width: 60 }}>Valor:</span>
+                                                <span style={{ fontWeight: 700, color: 'var(--success)' }}>{client.mrr}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        <Link to={`/clientes/${client.id}`} className="btn btn-primary" style={{ flex: 1, padding: '10px', fontSize: '0.85rem', justifyContent: 'center' }}>
+                                            Visão 360°
+                                        </Link>
+                                        <button
+                                            className="btn btn-outline"
+                                            style={{ padding: '10px 14px' }}
+                                            onClick={() => handleEdit(client)}
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                            {filtered.length === 0 && (
+                                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                                    Nenhum cliente encontrado.
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

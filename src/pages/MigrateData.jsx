@@ -31,7 +31,6 @@ const MigrateData = () => {
     // Namespace destino: onde os dados vão parar
     const getTargetNamespace = () => {
         if (!user) return 'shared';
-        if (user.id === 1) return 'demo';
         if (user.role === 'cliente_admin') return `tenant_${user.id}`;
         if (user.tenantId) return `tenant_${user.tenantId}`;
         return 'shared';
@@ -264,13 +263,6 @@ const MigrateData = () => {
                                         style={{ padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 8 }}
                                     >
                                         <ArrowRight size={16} /> Recuperar de "shared" (equipe matriz)
-                                    </button>
-                                    <button
-                                        className="btn btn-outline"
-                                        onClick={() => migrateAll('demo')}
-                                        style={{ padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)' }}
-                                    >
-                                        <ArrowRight size={16} /> Recuperar de "demo"
                                     </button>
                                 </div>
                             </div>

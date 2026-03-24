@@ -59,13 +59,13 @@ const UsersPage = () => {
         );
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMsg('');
         const form = e.target;
 
         if (editingUser) {
-            updateUser(editingUser.id, {
+            await updateUser(editingUser.id, {
                 name: form.name.value,
                 role: selectedRole,
                 customPermissions: selectedPerms
@@ -77,7 +77,7 @@ const UsersPage = () => {
                 setErrorMsg('E-mail já está em uso.');
                 return;
             }
-            createUser({
+            await createUser({
                 email,
                 password: form.password.value,
                 name: form.name.value,
@@ -88,23 +88,23 @@ const UsersPage = () => {
         }
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm('Tem certeza que deseja remover este usuário?')) {
-            const res = deleteUser(id);
+            const res = await deleteUser(id);
             if (!res.success) {
                 alert(res.error);
             }
         }
     };
 
-    const handleResetPassword = (e) => {
+    const handleResetPassword = async (e) => {
         e.preventDefault();
         const newPassword = e.target.newPassword.value;
         if (!newPassword || newPassword.length < 3) {
             alert('A senha deve ter pelo menos 3 caracteres.');
             return;
         }
-        updateUser(resetUser.id, { password: newPassword });
+        await updateUser(resetUser.id, { password: newPassword });
         setShowResetModal(false);
         setResetUser(null);
         alert(`Senha de ${resetUser.name} redefinida com sucesso!`);
@@ -127,7 +127,7 @@ const UsersPage = () => {
         if (filterType === 'matriz') return !u.tenantId && u.role !== 'cliente_admin';
         if (filterType === 'tenants') return u.tenantId || u.role === 'cliente_admin';
         if (filterType.startsWith('empresa_')) {
-            const tenantId = Number(filterType.replace('empresa_', ''));
+            const tenantId = filterType.replace('empresa_', '');
             return u.id === tenantId || u.tenantId === tenantId;
         }
         return true; // 'todos'
@@ -138,7 +138,7 @@ const UsersPage = () => {
         if (member.role === 'cliente_admin') return member.name;
         if (member.tenantId) {
             const owner = usersList.find(u => u.id === member.tenantId);
-            return owner ? owner.name : `Tenant #${member.tenantId}`;
+            return owner ? owner.name : `Tenant [${member.tenantId}]`;
         }
         return null;
     };
@@ -276,15 +276,17 @@ const UsersPage = () => {
                                                 <button className="btn btn-outline" style={{ padding: '6px 10px' }} onClick={() => openEditModal(member)} title="Editar Permissões">
                                                     <Edit2 size={14} />
                                                 </button>
-                                                <button
-                                                    className="btn btn-outline"
-                                                    style={{ padding: '6px 10px', color: 'var(--warning)', borderColor: 'transparent' }}
-                                                    onClick={() => { setResetUser(member); setShowResetModal(true); }}
-                                                    title="Resetar Senha"
-                                                >
-                                                    <KeyRound size={14} />
-                                                </button>
-                                                {member.id !== 1 && member.id !== 2 && member.id !== currentUser.id && (
+                                                {(member.role !== 'ceo' || currentUser?.role === 'ceo') && (
+                                                    <button
+                                                        className="btn btn-outline"
+                                                        style={{ padding: '6px 10px', color: 'var(--warning)', borderColor: 'transparent' }}
+                                                        onClick={() => { setResetUser(member); setShowResetModal(true); }}
+                                                        title="Resetar Senha"
+                                                    >
+                                                        <KeyRound size={14} />
+                                                    </button>
+                                                )}
+                                                {member.role !== 'ceo' && member.id !== currentUser?.id && (
                                                     <button className="btn btn-outline" style={{ padding: '6px 10px', color: 'var(--danger)', borderColor: 'transparent' }} onClick={() => handleDelete(member.id)} title="Excluir Usuário">
                                                         <Trash2 size={14} />
                                                     </button>

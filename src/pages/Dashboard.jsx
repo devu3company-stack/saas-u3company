@@ -32,15 +32,15 @@ const Dashboard = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div className="page-header" style={{ marginBottom: 0 }}>
+            <div className="page-header" style={{ marginBottom: 0, gap: 16 }}>
                 <div>
-                    <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.5rem' }}>
                         <Activity color="var(--accent-color)" /> Dashboard Geral
                     </h2>
-                    <p className="text-muted">Visão consolidada da agência em tempo real</p>
+                    <p className="text-muted" style={{ fontSize: '0.9rem' }}>Visão consolidada da agência em tempo real</p>
                 </div>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <select className="form-control" style={{ backgroundColor: 'transparent', border: '1px solid var(--border-color)', minWidth: 150 }}>
+                <div className="filter-bar" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <select className="form-control" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', minWidth: 150, padding: '8px 12px' }}>
                         <option>Hoje</option>
                         <option>Últimos 7 dias</option>
                         <option>Mês Atual</option>
@@ -91,6 +91,22 @@ const Dashboard = () => {
                         <ArrowDownRight size={14} /> {tasksCount.atrasadas} Atrasadas
                     </div>
                 </div>
+
+                {/* ADICIONAL: Extrator de Leads (UPGRADE) */}
+                <Link to="/extrator" className="card" style={{ 
+                    border: '1px dashed var(--accent-color)', 
+                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+                    gap: 8, cursor: 'pointer', textDecoration: 'none', transition: 'all 0.2s ease'
+                }}>
+                    <div style={{ padding: 8, backgroundColor: 'var(--accent-color)', borderRadius: '50%', color: 'white' }}>
+                        <Rocket size={18} />
+                    </div>
+                    <div style={{ fontWeight: 700, color: 'var(--accent-color)', fontSize: '0.9rem' }}>
+                        + Adicione o Extrator de Leads
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Opcional)</div>
+                </Link>
             </div>
 
             {/* Linha 2:  Painéis divididos */}

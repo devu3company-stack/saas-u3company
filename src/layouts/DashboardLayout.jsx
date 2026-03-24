@@ -6,9 +6,17 @@ import { useAuth } from '../utils/auth';
 const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, getAllowedMenuItems, getData, setData } = useAuth();
+  const { user, loading, logout, getAllowedMenuItems, getData, setData } = useAuth();
+  
+  // Redireciona se não estiver logado
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
+
   // Logo isolada por tenant: cada empresa tem a sua
-  const [logo, setLogo] = useState(() => getData('u3_logo', ''));
+  const [logo, setLogo] = useState(() => getData ? getData('u3_logo', '') : '');
   const fileInputRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 

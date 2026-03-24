@@ -24,6 +24,9 @@ import Prospecting from './pages/Prospecting';
 import MetaTracking from './pages/MetaTracking';
 import UsersPage from './pages/UsersPage';
 import MigrateData from './pages/MigrateData';
+import LeadExtractor from './pages/LeadExtractor';
+import ExtractorTool from './pages/ExtractorTool';
+import ExtractorLayout from './layouts/ExtractorLayout';
 
 import NpsSurvey from './pages/NpsSurvey';
 
@@ -39,6 +42,14 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/nps/:namespace/:id" element={<NpsSurvey />} />
 
+          <Route path="/extrator" element={<LeadExtractor />} />
+          
+          {/* Rota Protegida do Extrator (Standalone Feel) */}
+          <Route element={<ExtractorLayout />}>
+            <Route path="/extrator-ferramenta" element={<ExtractorTool />} />
+          </Route>
+
+          {/* Rota Protegida do CRM Principal */}
           <Route path="/" element={<DashboardLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />

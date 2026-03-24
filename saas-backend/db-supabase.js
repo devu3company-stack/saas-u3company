@@ -7,9 +7,7 @@ const supabase = createClient(
 );
 
 const INITIAL_USERS = [
-    { id: 1, email: 'demo@u3company.com', password: 'demo', name: 'Usuário Demonstração', role: 'ceo', tenant_id: null, custom_permissions: null },
-    { id: 2, email: 'ceo@u3company.com', password: 'ceo', name: 'Administrador', role: 'ceo', tenant_id: null, custom_permissions: null },
-    { id: 3, email: 'designer@u3company.com', password: 'designer123', name: 'Time de Design', role: 'designer', tenant_id: null, custom_permissions: null }
+    { id: 2, email: 'ceo@u3company.com', password: 'ceo', name: 'Administrador Principal', role: 'ceo', tenant_id: null, custom_permissions: null }
 ];
 
 // GET data by namespace + key

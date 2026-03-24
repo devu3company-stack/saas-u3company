@@ -16,7 +16,6 @@ const Surveys = () => {
     // Calcula o namespace baseado no user logado (mesma lógica do auth.jsx)
     const getNamespace = () => {
         if (!user) return 'shared';
-        if (user.id === 1) return 'demo';
         if (user.role === 'cliente_admin' || user.tenantId) return `tenant_${user.tenantId || user.id}`;
         return 'shared';
     };

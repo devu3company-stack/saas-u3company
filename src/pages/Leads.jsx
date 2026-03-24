@@ -4,6 +4,7 @@ import { useAuth } from '../utils/auth';
 import { useSyncedData } from '../utils/useSyncedData';
 
 const Leads = () => {
+    const { namespace } = useAuth();
     const [pipeline, saveLeads] = useSyncedData('u3_leads', []);
 
     const [showWebhook, setShowWebhook] = useState(false);
@@ -184,9 +185,9 @@ const Leads = () => {
                         <div className="form-group">
                             <label className="form-label" style={{ fontWeight: 600 }}>Webhook Exclusivo desta Licença</label>
                             <div style={{ display: 'flex' }}>
-                                <input readOnly type="text" className="form-control" value="https://api.u3company.com/webhook/receive/t_k98dfj23_lead" style={{ borderRadius: '6px 0 0 6px', fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--accent-color)' }} />
+                                <input readOnly type="text" className="form-control" value={`https://api.u3company.com/api/webhook/receive/${namespace}`} style={{ borderRadius: '6px 0 0 6px', fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--accent-color)' }} />
                                 <button className="btn btn-primary" style={{ borderRadius: '0 6px 6px 0' }} onClick={(e) => {
-                                    navigator.clipboard.writeText("https://api.u3company.com/webhook/receive/t_k98dfj23_lead");
+                                    navigator.clipboard.writeText(`https://api.u3company.com/api/webhook/receive/${namespace}`);
                                     e.target.innerText = "Copiado!";
                                     setTimeout(() => e.target.innerText = "Copiar", 2000);
                                 }}>Copiar</button>

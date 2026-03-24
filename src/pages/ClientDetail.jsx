@@ -148,20 +148,21 @@ const ClientDetail = () => {
                 </div>
             </div>
 
-            <div className="tabs">
+            <div className="tabs" style={{ marginTop: 8 }}>
                 {[
-                    { id: 'resumo', label: 'Resumo & Dashboard' },
-                    { id: 'materiais', label: 'Materiais & Briefing' },
-                    { id: 'onboarding', label: 'Trilha de Onboarding' },
-                    { id: 'crm', label: 'CRM & Funil' },
+                    { id: 'resumo', label: 'Dashboard' },
+                    { id: 'materiais', label: 'Arquivos & Briefing' },
+                    { id: 'onboarding', label: 'Onboarding' },
+                    { id: 'crm', label: 'Funil CRM' },
                     { id: 'midia', label: 'Mídia & Performance' },
-                    { id: 'tarefas', label: 'Tarefas da Equipe' },
-                    { id: 'cofre', label: 'Docs & Senhas' }
+                    { id: 'tarefas', label: 'Checklist' },
+                    { id: 'cofre', label: 'Cofre' }
                 ].map(tab => (
                     <div
                         key={tab.id}
                         className={`tab ${activeTab === tab.id ? 'active' : ''}`}
                         onClick={() => setActiveTab(tab.id)}
+                        style={{ padding: '12px 16px', fontSize: '0.9rem' }}
                     >
                         {tab.label}
                     </div>

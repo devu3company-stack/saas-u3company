@@ -89,6 +89,149 @@ zapproSocket.on(`company-${ZAPPRO_COMPANY_ID}-contact`, (data) => {
 });
 
 //==========================================================
+// WEBHOOK RECEIVE LEADS (META, TYPEFORM, etc)
+//==========================================================
+// Suporte para verificação do Meta Webhook (GET)
+app.get('/api/webhook/receive/:namespace', (req, res) => {
+    const verifyToken = process.env.WEBHOOK_VERIFY_TOKEN || 'u3_verify_token';
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+
+    if (mode === 'subscribe' && token === verifyToken) {
+        console.log('[Webhook Verify] Meta verification successful!');
+        res.status(200).send(challenge);
+    } else {
+        res.status(403).send('Verification failed');
+    }
+});
+
+//==========================================================
+// WEBHOOK KIWIFY (AUTOMAÇÃO DE VENDAS)
+//==========================================================
+// Este endpoint recebe os dados da Kiwify quando uma venda é aprovada
+// e cria automaticamente o usuário no Firebase Auth + Firestore.
+const firebaseAdmin = require('./firebase-admin');
+
+app.post('/api/webhook/kiwify', async (req, res) => {
+    const data = req.body;
+    const { order_status, customer_email, customer_full_name, customer_mobile, product_name } = data;
+
+    console.log(`📦 Webhook Kiwify Recebido: ${customer_email} - Status: ${order_status}`);
+
+    // Só liberamos acesso se o pagamento estiver aprovado (paid ou approved)
+    if (order_status === 'paid' || order_status === 'approved') {
+        try {
+            if (!firebaseAdmin || !firebaseAdmin.apps.length) {
+                console.error("❌ Firebase Admin não inicializado. Verifique as credenciais.");
+                return res.status(500).json({ error: 'Firebase Admin not configured' });
+            }
+
+            const auth = firebaseAdmin.auth();
+            const db = firebaseAdmin.firestore();
+
+            let firebaseUser;
+            try {
+                // Tenta buscar o usuário já existente
+                firebaseUser = await auth.getUserByEmail(customer_email);
+                console.log(`⚠️ Usuário ${customer_email} já existe no Firebase Auth. Atualizando permissões...`);
+            } catch (err) {
+                // Se não existir, cria o usuário
+                // Sugestão: A senha inicial é o celular do cliente (apenas números para facilitar)
+                const initialPassword = customer_mobile.replace(/\D/g, '') || "U3" + Math.random().toString(36).substring(7);
+                
+                firebaseUser = await auth.createUser({
+                    email: customer_email,
+                    password: initialPassword,
+                    displayName: customer_full_name,
+                });
+                console.log(`✅ Novo usuário criado: ${customer_email}`);
+
+                // Envia e-mail de boas-vindas com as credenciais
+                await transporter.sendMail({
+                    from: EMAIL_FROM,
+                    to: customer_email,
+                    subject: `🚀 Bem-vindo ao Extrator de Leads da U3 Company!`,
+                    html: `
+                        <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                            <h2>Olá, ${customer_full_name}!</h2>
+                            <p>Sua compra do <b>${product_name || 'Extrator de Leads'}</b> foi aprovada com sucesso. 🎉</p>
+                            <p>Aqui estão seus dados de acesso à plataforma:</p>
+                            <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                                <b>🔗 Link de Acesso:</b> <a href="https://u3company.app/login">https://u3company.app/login</a><br>
+                                <b>📧 E-mail:</b> ${customer_email}<br>
+                                <b>🔑 Senha Temporária:</b> ${initialPassword}
+                            </div>
+                            <p>Recomendamos que você altere sua senha após o primeiro acesso.</p>
+                            <hr>
+                            <p style="font-size: 0.8rem; color: #666;">Dúvidas? Responda a este e-mail.</p>
+                        </div>
+                    `
+                }).catch(e => console.error("❌ Erro ao enviar email:", e.message));
+            }
+
+            // Garante que o usuário tenha o Role 'extrator' no Firestore (crm_users)
+            // Isso libera o acesso à página /extrator-ferramenta
+            await db.collection('crm_users').doc(firebaseUser.uid).set({
+                name: customer_full_name,
+                email: customer_email,
+                role: 'extrator', // Papel com as permissões da ferramenta
+                status: 'ativo',
+                purchased_at: new Date().toISOString(),
+                product: product_name || 'Extrator de Leads'
+            }, { merge: true });
+
+            console.log(`🎯 Acesso liberado para ${customer_email}!`);
+
+            return res.json({ success: true, message: 'User created and access granted' });
+
+        } catch (error) {
+            console.error('❌ Erro no Processamento da Kiwify:', error.message);
+            return res.status(500).json({ error: 'Internal processing error' });
+        }
+    }
+
+    // Se o status for pendente ou cancelado, apenas ignoramos ou avisamos
+    res.json({ success: true, message: 'Status received but no action required' });
+});
+
+app.post('/api/webhook/receive/:namespace', async (req, res) => {
+    const { namespace } = req.params;
+    const { name, phone, source, campaign, email, comments } = req.body;
+
+    // Se vier de uma automação que usa campos diferentes, podemos mapear aqui
+    const finalName = name || req.body.full_name || 'Lead sem Nome';
+    const finalPhone = phone || req.body.mobile_number || req.body.whatsapp || '0000000000';
+
+    try {
+        const key = 'u3_leads';
+        const existingLeads = await getData(namespace, key) || [];
+        
+        const newLead = {
+            id: Date.now(),
+            name: finalName,
+            telefone: finalPhone,
+            email: email || req.body.user_email || '',
+            origem: source || 'Webhook Extração',
+            campanha: campaign || req.body.ad_name || '-',
+            status: 'Novo', // Default stage
+            updatedAt: Date.now(),
+            cardColor: '#ffffff',
+            comentarios: comments || `Lead recebido via API em ${new Date().toLocaleString()}`
+        };
+
+        existingLeads.push(newLead);
+        await setData(namespace, key, existingLeads);
+
+        console.log(`[Lead Webhook] Recebido para o namespace: ${namespace} | Lead: ${finalName}`);
+        res.status(200).json({ success: true, message: 'Lead adicionado com sucesso ao CRM' });
+    } catch (error) {
+        console.error('Erro ao processar webhook de lead:', error);
+        res.status(500).json({ error: 'Erro interno ao salvar lead.' });
+    }
+});
+
+//==========================================================
 // ROTAS DO BRIDGE CRM
 //==========================================================
 app.post('/api/whatsapp/send-message', async (req, res) => {
@@ -292,7 +435,8 @@ app.post('/api/webhooks/kiwify', async (req, res) => {
 
     const { full_name, email } = customer;
 
-    const userExists = db.get('users').find({ email: email }).value();
+    const users = await getUsers();
+    const userExists = users.find(u => u.email === email);
 
     if (userExists) {
         console.log(`⚠️ Usuário ${email} já existe. Ignorando criação.`);
@@ -310,7 +454,8 @@ app.post('/api/webhooks/kiwify', async (req, res) => {
         createdAt: new Date().toISOString()
     };
 
-    db.get('users').push(newUser).write();
+    users.push(newUser);
+    await saveUsers(users);
 
     console.log(`✅ Novo usuário criado para Kiwify: ${email}`);
 
