@@ -21,11 +21,11 @@ export function useSyncedData(key, fallback = [], overrideNamespace = null) {
     useEffect(() => {
         if (!ns || !key) return;
 
-        // Referência do documento no Firestore: Coleção 'crm_data' -> Documento '[namespace]__[key]'
-        const docRef = doc(db, "crm_data", `${ns}__${key}`);
+        // Referência do documento no Firestore: Coleção 'crm_data' -> Documento '[namespace]_[key]'
+        const docRef = doc(db, "crm_data", `${ns}_${key}`);
 
         // Tenta ler do localStorage primeiro para carregamento instantâneo (UI rápida)
-        const localKey = `${ns}__${key}`;
+        const localKey = `${ns}_${key}`;
         try {
             const cached = localStorage.getItem(localKey);
             if (cached !== null && !hasInitialData.current) {
@@ -44,7 +44,13 @@ export function useSyncedData(key, fallback = [], overrideNamespace = null) {
             } else {
                 // Se documento não existe na nuvem, mantém o local ou volta pro fallback
                 if (!hasInitialData.current) {
-                    setLocalData(fallback);
+                    try {
+                        const localCached = localStorage.getItem(localKey);
+                        if (localCached !== null) setLocalData(JSON.parse(localCached));
+                        else setLocalData(fallback);
+                    } catch (e) {
+                        setLocalData(fallback);
+                    }
                 }
             }
             hasInitialData.current = true;
@@ -63,11 +69,11 @@ export function useSyncedData(key, fallback = [], overrideNamespace = null) {
         setLocalData(newValue);
         
         // Persiste no cache local
-        try { localStorage.setItem(`${ns}__${key}`, JSON.stringify(newValue)); } catch (e) { }
+        try { localStorage.setItem(`${ns}_${key}`, JSON.stringify(newValue)); } catch (e) { }
 
         // Persiste no Firestore (vai refletir em todas as outras máquinas via onSnapshot)
         try {
-            const docRef = doc(db, "crm_data", `${ns}__${key}`);
+            const docRef = doc(db, "crm_data", `${ns}_${key}`);
             await setDoc(docRef, { 
                 value: newValue,
                 updatedAt: new Date().toISOString(),

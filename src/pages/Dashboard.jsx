@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Target, DollarSign, Calendar, AlertTriangle, MessageSquare, CheckSquare, Activity, ArrowUpRight, ArrowDownRight, Users, Clock, Smile } from 'lucide-react';
+import { Target, DollarSign, Calendar, AlertTriangle, MessageSquare, CheckSquare, Activity, ArrowUpRight, ArrowDownRight, Users, Clock, Smile, Rocket } from 'lucide-react';
 import { useAuth } from '../utils/auth';
 import { useSyncedData } from '../utils/useSyncedData';
 
@@ -11,6 +11,10 @@ const Dashboard = () => {
     const [savedClients] = useSyncedData('u3_clients_v2', []);
     const [savedLeads] = useSyncedData('u3_leads', []);
     const [savedTasks] = useSyncedData('u3_tarefas', []);
+    const [savedMeetings] = useSyncedData('u3_meetings', []);
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayMeetings = (savedMeetings || []).filter(m => m.date === today);
 
     const mrr = (savedClients || []).reduce((acc, c) => {
         if (c.status === 'ativo' && c.mrr) {
@@ -92,21 +96,6 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* ADICIONAL: Extrator de Leads (UPGRADE) */}
-                <Link to="/extrator" className="card" style={{ 
-                    border: '1px dashed var(--accent-color)', 
-                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-                    gap: 8, cursor: 'pointer', textDecoration: 'none', transition: 'all 0.2s ease'
-                }}>
-                    <div style={{ padding: 8, backgroundColor: 'var(--accent-color)', borderRadius: '50%', color: 'white' }}>
-                        <Rocket size={18} />
-                    </div>
-                    <div style={{ fontWeight: 700, color: 'var(--accent-color)', fontSize: '0.9rem' }}>
-                        + Adicione o Extrator de Leads
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Opcional)</div>
-                </Link>
             </div>
 
             {/* Linha 2:  Painéis divididos */}
@@ -156,11 +145,49 @@ const Dashboard = () => {
                         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <Calendar size={16} color="var(--text-muted)" /> Agenda de Hoje
+                                {todayMeetings.length > 0 && (
+                                    <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--accent-color)', color: '#000', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
+                                        {todayMeetings.length}
+                                    </span>
+                                )}
                             </h3>
                             <Link to="/reunioes" className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Ver Agenda</Link>
                         </div>
-                        <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                            Nenhuma reunião agendada para hoje
+                        <div style={{ padding: todayMeetings.length > 0 ? 16 : 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {todayMeetings.length > 0 ? todayMeetings.map((m, idx) => (
+                                <div key={idx} style={{ padding: 12, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--accent-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>{m.title}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <Clock size={12} /> {m.timeStart} - {m.timeEnd || '?'} | {m.client}
+                                        </div>
+                                        {m.participants && m.participants.length > 0 && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginTop: 6 }}>
+                                                {m.participants.slice(0, 3).map((p, i) => (
+                                                    <div key={p.id || i} title={p.name} style={{
+                                                        width: 22, height: 22, borderRadius: '50%', backgroundColor: '#6366f1',
+                                                        color: '#fff', fontSize: '0.55rem', fontWeight: 700, display: 'flex',
+                                                        alignItems: 'center', justifyContent: 'center', marginLeft: i > 0 ? -6 : 0,
+                                                        border: '2px solid var(--bg-tertiary)', textTransform: 'uppercase'
+                                                    }}>
+                                                        {(p.name || '?')[0]}
+                                                    </div>
+                                                ))}
+                                                {m.participants.length > 3 && (
+                                                    <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginLeft: 4 }}>+{m.participants.length - 3}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {m.meetLink && (
+                                        <a href={m.meetLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '0.7rem', textDecoration: 'none' }}>Entrar</a>
+                                    )}
+                                </div>
+                            )) : (
+                                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                    Nenhuma reunião agendada para hoje
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

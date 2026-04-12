@@ -23,15 +23,13 @@ const Tarefas = () => {
         }
     }, [syncedClients]);
 
-    const isMatrixUser = ['ceo', 'gestor', 'sdr', 'designer', 'financeiro'].includes(user?.role);
+    const isMatrixUser = !user?.tenantId && user?.role !== 'cliente_admin' && user?.role !== 'cliente' && user?.role !== 'extrator';
     const myTenantId = user?.tenantId || (user?.role === 'cliente_admin' ? user?.id : null);
 
-    // Filtragem das tarefas: Matriz vê tudo, Cliente vê apenas o dele
-    const filteredTarefas = tarefas.filter(t => {
-        if (isMatrixUser) return true;
-        // Se for cliente, precisa que o tenantId da tarefa bata com o dele
-        return t.tenantId === myTenantId;
-    });
+    // Filtragem das tarefas: Os dados já estão isolados no Firestore pelo 'namespace'.
+    // Portanto, é seguro exibir todas as tarefas retornadas no hook para este usuário,
+    // garantindo que ele não perca visibilidade de tarefas criadas por ele mesmo para clientes internos.
+    const filteredTarefas = tarefas;
 
     const [modalOpen, setModalOpen] = useState(false);
     const [editTask, setEditTask] = useState(null);
@@ -76,7 +74,12 @@ const Tarefas = () => {
         // Encontra o tenantId do cliente selecionado
         const selectedClientName = form.cliente.value;
         const selectedClientObj = clientesData.find(c => c.name === selectedClientName);
-        const taskTenantId = selectedClientObj ? selectedClientObj.id : null;
+        let taskTenantId = selectedClientObj ? selectedClientObj.id : null;
+
+        // Se o criador não é do time (Matriz) e a tarefa ficou sem tenant, assume o tenant dele.
+        if (!isMatrixUser && !taskTenantId) {
+            taskTenantId = myTenantId;
+        }
 
         const novaTarefa = {
             id: Date.now(),
@@ -106,7 +109,12 @@ const Tarefas = () => {
 
         const selectedClientName = form.cliente.value;
         const selectedClientObj = clientesData.find(c => c.name === selectedClientName);
-        const taskTenantId = selectedClientObj ? selectedClientObj.id : null;
+        let taskTenantId = selectedClientObj ? selectedClientObj.id : null;
+
+        // Mantém a tarefa no tenant do usuário isolado caso edite
+        if (!isMatrixUser && !taskTenantId) {
+            taskTenantId = myTenantId;
+        }
 
         const newList = tarefas.map(t => {
             if (t.id === editTask.id) {
